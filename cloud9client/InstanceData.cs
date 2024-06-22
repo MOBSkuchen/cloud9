@@ -2,8 +2,8 @@
 
 public struct InstanceData
 {
-    public InstanceData(String host, String username, int port, String password, bool isKeyAuth, String remotePath, String driveName, String mountPath, double protocolVersion)
-    {
+    public InstanceData(String host, String username, int port, String password, bool isKeyAuth, String remotePath, 
+        String driveName, String mountPath, double protocolVersion) {
         Host = host;
         Username = username;
         Port = port;
@@ -30,8 +30,7 @@ public struct InstanceData
     
     public double ProtocolVersion;
 
-    public static InstanceData? ConvertToInstanceData(Dictionary<string, string> instanceDataDictionary)
-    {
+    public static InstanceData? ConvertToInstanceData(Dictionary<string, string> instanceDataDictionary) {
         String[] mustHaveList =
             ["host", "username", "password", "port", "isKeyAuth", "driveName", "remotePath", "mountPath"];
 
