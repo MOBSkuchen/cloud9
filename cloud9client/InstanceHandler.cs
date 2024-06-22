@@ -7,16 +7,14 @@ namespace cloud9client;
 internal class InstanceHandler : IDokanOperations
 {
     private readonly IClientBlueprint _clientHandler;
-    public readonly String Label;
-    public readonly String Name;
+    private readonly InstanceData _instanceData;
     
     #region DokanOperations member
 
-    public InstanceHandler(String label, String name, IClientBlueprint clientHandler)
+    public InstanceHandler(InstanceData instanceData, IClientBlueprint clientHandler)
     {
         _clientHandler = clientHandler;
-        Label = label;
-        Name = name;
+        _instanceData = instanceData;
     }
 
     public void Cleanup(string filename, IDokanFileInfo info)
@@ -206,9 +204,9 @@ internal class InstanceHandler : IDokanOperations
     public NtStatus GetVolumeInformation(out string volumeLabel, out FileSystemFeatures features,
         out string fileSystemName, out uint maximumComponentLength, IDokanFileInfo info)
     {
-        volumeLabel = Label;
+        volumeLabel = _instanceData.DriveName;
         features = FileSystemFeatures.None;
-        fileSystemName = Name;
+        fileSystemName = String.Empty;
         maximumComponentLength = 256;
         return DokanResult.Success;
     }
