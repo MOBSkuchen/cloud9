@@ -17,6 +17,7 @@ public struct InstanceData
 
         ProtocolVersion = protocolVersion;
     }
+    
     public String Host;
     public String Username;
     public int Port;
