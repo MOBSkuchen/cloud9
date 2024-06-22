@@ -1,0 +1,16 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cloud9client", "cloud9client\cloud9client.csproj", "{CB93CD71-49E0-44DB-BDDF-8D9C2B94C322}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{CB93CD71-49E0-44DB-BDDF-8D9C2B94C322}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CB93CD71-49E0-44DB-BDDF-8D9C2B94C322}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CB93CD71-49E0-44DB-BDDF-8D9C2B94C322}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CB93CD71-49E0-44DB-BDDF-8D9C2B94C322}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
