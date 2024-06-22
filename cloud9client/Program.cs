@@ -43,7 +43,6 @@ class Program
         AssertExpression(File.Exists(configFilePath));
 
         var configLoaded = LoadConfig(configFilePath);
-        if (configLoaded == null) Error(10, "Non existent config file");
         AssertHas(["host", "username", "password", "port", "isKeyAuth", "driveName", "remotePath", "mountPath"], configLoaded);
 
         var instanceData = InstanceData.ConvertToInstanceData(configLoaded);
