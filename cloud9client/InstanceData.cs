@@ -31,25 +31,10 @@ public struct InstanceData
     public double ProtocolVersion;
 
     public static InstanceData? ConvertToInstanceData(Dictionary<string, string> instanceDataDictionary) {
-        String[] mustHaveList =
-            ["host", "username", "password", "port", "isKeyAuth", "driveName", "remotePath", "mountPath"];
-
-        foreach (var field in mustHaveList)
-        {
-            if (!instanceDataDictionary.ContainsKey(field)) return null;
-        }
-
-        try {
-            return new InstanceData(instanceDataDictionary["host"], instanceDataDictionary["username"],
-                Convert.ToInt32(instanceDataDictionary["port"]), instanceDataDictionary["password"],
-                instanceDataDictionary["isKeyAuth"] == "true", instanceDataDictionary["remotePath"],
-                instanceDataDictionary["driveName"],
-                instanceDataDictionary["mountPath"], 1.0);
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine("Conversion error");
-            return null;
-        }
+        return new InstanceData(instanceDataDictionary["host"], instanceDataDictionary["username"],
+            Convert.ToInt32(instanceDataDictionary["port"]), instanceDataDictionary["password"],
+            instanceDataDictionary["isKeyAuth"] == "true", instanceDataDictionary["remotePath"],
+            instanceDataDictionary["driveName"],
+            instanceDataDictionary["mountPath"], 1.0);
     }
 }
