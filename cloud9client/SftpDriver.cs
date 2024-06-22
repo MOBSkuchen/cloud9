@@ -19,8 +19,8 @@ public class SftpDriver : IClientBlueprint {
         
         if (!instanceData.IsKeyAuth) _client = new SftpClient(instanceData.Host, instanceData.Port, instanceData.Username, instanceData.Password);
         else _client = new SftpClient(instanceData.Host, instanceData.Port, instanceData.Username, new PrivateKeyFile(instanceData.Password));
-
         _instanceData = instanceData;
+        Connect();
     }
 
     private void UpdateFinfoCache()
@@ -49,11 +49,11 @@ public class SftpDriver : IClientBlueprint {
         _client.Connect();
         _sshClient.Connect();
         Task taskUpdateFinfoCache = Task.Run((Action) UpdateFinfoCache);
-        _client.ChangeDirectory(_instanceData.RemotePath);
     }
 
     public String ConvertFmt(String previous)
     {
+        previous = Path.Join(_instanceData.RemotePath, previous);
         return previous.Replace("\\", "/");
     }
 
