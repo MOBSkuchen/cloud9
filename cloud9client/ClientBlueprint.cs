@@ -18,6 +18,6 @@ public interface IClientBlueprint
     public void CreateDirectory(String path);
     public void MoveFile(String oldpath, String newpath);
     public void SetFileSize(String path, long size);
-    public FileInformation GetFileInfoCached(String path);
+    public FileInformation GetFileInfo(String path);
     public (long totalBytes, long freeBytes) GetDriveSize();
 }

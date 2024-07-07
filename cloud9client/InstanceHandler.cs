@@ -82,7 +82,7 @@ internal class InstanceHandler : IDokanOperations
         filename = _clientHandler.ConvertFmt(filename);
         fileinfo = new FileInformation();
         if (!_clientHandler.FileExists(filename)) {return DokanResult.FileNotFound;}
-        fileinfo = _clientHandler.GetFileInfoCached(filename);
+        fileinfo = _clientHandler.GetFileInfo(filename);
         return DokanResult.Success;
     }
 

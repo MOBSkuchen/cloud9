@@ -93,7 +93,7 @@ public class SftpDriver : IClientBlueprint {
         foreach (var item in _client.ListDirectory(path))
         {
             if (item.Name == "." || item.Name == "..") continue;
-            files.Add(GetFileInfoCached(item.FullName));
+            files.Add(GetFileInfo(item.FullName));
         }
 
         return files;
@@ -149,7 +149,7 @@ public class SftpDriver : IClientBlueprint {
         UpdateFinfoCacheFor(path);
     }
 
-    public FileInformation GetFileInfoCached(String path)
+    public FileInformation GetFileInfo(String path)
     {
         if (!_finfoCache.ContainsKey(path)) _finfoCache[path] = ConstructFileInfo(path);
         return _finfoCache[path];
