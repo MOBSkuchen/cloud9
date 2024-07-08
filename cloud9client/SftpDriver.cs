@@ -57,21 +57,31 @@ public class SftpDriver : IClientBlueprint {
         return previous.Replace("\\", "/");
     }
 
-    public void Disconnect() {
+    public void Close() {
         _client.Disconnect();
         _client.Dispose();
     }
 
-    public bool DeletePath(String path) {
+    public bool DeletePath(String path)
+    {
+        path = ConvertFmt(path);
         if (!_client.Exists(path)) return false;
         _client.Delete(path);
         UpdateFinfoCacheFor(path);
         return true;
     }
 
-    public FileInformation? ConstructFileInfoMNull(String path) { if (!FileExists(path)) return null; return ConstructFileInfo(path);}
-    
-    public FileInformation ConstructFileInfo(String path) {return ConvertFileInfo(_client.Get(path)); }
+    public FileInformation? ConstructFileInfoMNull(String path)
+    {
+        path = ConvertFmt(path);
+        if (!FileExists(path)) return null; return ConstructFileInfo(path);
+    }
+
+    public FileInformation ConstructFileInfo(String path)
+    {
+        path = ConvertFmt(path);
+        return ConvertFileInfo(_client.Get(path));
+    }
 
     public FileInformation ConvertFileInfo(object item_)
     {
@@ -89,6 +99,7 @@ public class SftpDriver : IClientBlueprint {
 
     public List<FileInformation> ListFiles(String path)
     {
+        path = ConvertFmt(path);
         List<FileInformation> files = new List<FileInformation>();
         foreach (var item in _client.ListDirectory(path))
         {
@@ -99,10 +110,15 @@ public class SftpDriver : IClientBlueprint {
         return files;
     }
 
-    public bool FileExists(String path) { return _client.Exists(path); }
+    public bool FileExists(String path)
+    {
+        path = ConvertFmt(path);
+        return _client.Exists(path);
+    }
 
     public int ReadBuffer(String path, byte[] bytes, int length, int offset)
     {
+        path = ConvertFmt(path);
         var reader = _client.OpenRead(path);
         reader.Seek(offset, SeekOrigin.Begin);
         return reader.Read(bytes, 0, length);
@@ -110,6 +126,7 @@ public class SftpDriver : IClientBlueprint {
 
     public void WriteBuffer(String path, byte[] buffer, int offset)
     {
+        path = ConvertFmt(path);
         var writer = _client.OpenWrite(path);
         writer.Seek(offset, SeekOrigin.Begin);
         writer.Write(buffer);
@@ -117,8 +134,9 @@ public class SftpDriver : IClientBlueprint {
         UpdateFinfoCacheFor(path);
     }
 
-    public void SetFileTimes(string path, DateTime? atime, DateTime? mtime)
+    public void SetFileTimes(string path, DateTime? atime, DateTime? mtime, DateTime? ctime)
     {
+        path = ConvertFmt(path);
         if (atime != null) {_client.SetLastAccessTime(path, atime.Value);}
         if (mtime != null) {_client.SetLastWriteTime(path, mtime.Value);}
         UpdateFinfoCacheFor(path);
@@ -126,17 +144,21 @@ public class SftpDriver : IClientBlueprint {
     
     public void CreateFile(String path)
     {
+        path = ConvertFmt(path);
         _client.Create(path);
     }
 
     public void CreateDirectory(String path)
     {
+        path = ConvertFmt(path);
         _client.CreateDirectory(path);
         UpdateFinfoCacheFor(path);
     }
 
     public void MoveFile(String oldpath, String newpath)
     {
+        oldpath = ConvertFmt(oldpath);
+        newpath = ConvertFmt(newpath);
         _client.Get(oldpath).MoveTo(newpath);
         UpdateFinfoCacheFor(newpath);
         UpdateFinfoCacheFor(oldpath);
@@ -144,6 +166,7 @@ public class SftpDriver : IClientBlueprint {
 
     public void SetFileSize(String path, long size)
     {
+        path = ConvertFmt(path);
         var handle = _client.Open(path, FileMode.Open);
         handle.SetLength(size);
         UpdateFinfoCacheFor(path);
@@ -151,6 +174,7 @@ public class SftpDriver : IClientBlueprint {
 
     public FileInformation GetFileInfo(String path)
     {
+        path = ConvertFmt(path);
         if (!_finfoCache.ContainsKey(path)) _finfoCache[path] = ConstructFileInfo(path);
         return _finfoCache[path];
     }
@@ -193,5 +217,11 @@ public class SftpDriver : IClientBlueprint {
             freeBytes = 0;
         }
         return (totalBytes, freeBytes);
+    }
+
+    public void SetFileAttributes(string path, FileAttributes fileAttributes)
+    {
+        path = ConvertFmt(path);
+        File.SetAttributes(path, fileAttributes);
     }
 }
