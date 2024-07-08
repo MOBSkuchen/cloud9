@@ -61,11 +61,6 @@ class Program
                 client = CreateSftpClient(instanceData.Value);
                 break;
             }
-            case "sock":
-            {
-                Error(404, "Not implemented / found");
-                break;
-            }
             case "clone":
             {
                 client = CreateCloneClient(instanceData.Value);
@@ -107,12 +102,11 @@ class Program
                 Console.WriteLine("help - Get help");
                 Console.WriteLine("version - Get version");
                 Console.WriteLine("client <configfile> - Spawn a new client instance");
-                Console.WriteLine("server <configfile> - Spawn a new server instance");
                 Console.WriteLine("End of help");
                 Console.WriteLine("------------");
                 Console.WriteLine("Allowed client / server methods");
-                Console.WriteLine(" + SFTP (client only)     : Connects to running SFTP server");
-                Console.WriteLine(" [COMING SOON] - SOCK (client & server) : Connects to running Cloud9 server");
+                Console.WriteLine(" + SFTP  (client only)     : Connects to running SFTP server");
+                Console.WriteLine(" + CLONE (client only)     : Clones from path on device");
                 Console.WriteLine("------------");
                 break;
             default:
