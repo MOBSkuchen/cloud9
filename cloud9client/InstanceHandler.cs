@@ -35,7 +35,6 @@ internal class InstanceHandler : IDokanOperations
         IDokanFileInfo info)
     {
         if (mode != FileMode.CreateNew) return DokanResult.Success;
-        filename = _clientHandler.ConvertFmt(filename);
         if (info.IsDirectory)
             _clientHandler.CreateDirectory(filename);
         else 
@@ -45,13 +44,13 @@ internal class InstanceHandler : IDokanOperations
 
     public NtStatus DeleteDirectory(string filename, IDokanFileInfo info) {
         if (!_clientHandler.FileExists(filename)) {return DokanResult.FileNotFound;}
-        _clientHandler.DeletePath(_clientHandler.ConvertFmt(filename));
+        _clientHandler.DeletePath(filename);
         return DokanResult.Success;
     }
 
     public NtStatus DeleteFile(string filename, IDokanFileInfo info) {
         if (!_clientHandler.FileExists(filename)) {return DokanResult.FileNotFound;}
-        _clientHandler.DeletePath(_clientHandler.ConvertFmt(filename));
+        _clientHandler.DeletePath(filename);
         return DokanResult.Success;
     }
 
@@ -67,7 +66,6 @@ internal class InstanceHandler : IDokanOperations
         out IList<FileInformation> files,
         IDokanFileInfo info)
     {
-        filename = _clientHandler.ConvertFmt(filename);
         files = new List<FileInformation>();
         if (!_clientHandler.FileExists(filename)) {return DokanResult.FileNotFound;}
         files = _clientHandler.ListFiles(filename);
@@ -79,20 +77,9 @@ internal class InstanceHandler : IDokanOperations
         out FileInformation fileinfo,
         IDokanFileInfo info)
     {
-        filename = _clientHandler.ConvertFmt(filename);
         fileinfo = new FileInformation();
         if (!_clientHandler.FileExists(filename)) {return DokanResult.FileNotFound;}
         fileinfo = _clientHandler.GetFileInfo(filename);
-        return DokanResult.Success;
-    }
-
-    public NtStatus LockFile(
-        string filename,
-        long offset,
-        long length,
-        IDokanFileInfo info)
-    {
-        filename = _clientHandler.ConvertFmt(filename);
         return DokanResult.Success;
     }
 
@@ -102,8 +89,6 @@ internal class InstanceHandler : IDokanOperations
         bool replace,
         IDokanFileInfo info)
     {
-        filename = _clientHandler.ConvertFmt(filename);
-        newname = _clientHandler.ConvertFmt(newname);
         _clientHandler.MoveFile(filename, newname);
         return DokanResult.Success;
     }
@@ -115,7 +100,6 @@ internal class InstanceHandler : IDokanOperations
         long offset,
         IDokanFileInfo info)
     {
-        filename = _clientHandler.ConvertFmt(filename);
         readBytes = 0;
         if (!_clientHandler.FileExists(filename)) {return DokanResult.FileNotFound;}
         readBytes = _clientHandler.ReadBuffer(filename, buffer, buffer.Length, Convert.ToInt32(offset));
@@ -124,14 +108,12 @@ internal class InstanceHandler : IDokanOperations
 
     public NtStatus SetEndOfFile(string filename, long length, IDokanFileInfo info)
     {
-        filename = _clientHandler.ConvertFmt(filename);
         _clientHandler.SetFileSize(filename, length);
         return DokanResult.Success;
     }
 
     public NtStatus SetAllocationSize(string filename, long length, IDokanFileInfo info)
     {
-        filename = _clientHandler.ConvertFmt(filename);
         _clientHandler.SetFileSize(filename, length);
         return DokanResult.Success;
     }
@@ -141,7 +123,7 @@ internal class InstanceHandler : IDokanOperations
         FileAttributes attr,
         IDokanFileInfo info)
     {
-        filename = _clientHandler.ConvertFmt(filename);
+        _clientHandler.SetFileAttributes(filename, attr);
         return DokanResult.Success;
     }
 
@@ -152,15 +134,22 @@ internal class InstanceHandler : IDokanOperations
         DateTime? mtime,
         IDokanFileInfo info)
     {
-        filename = _clientHandler.ConvertFmt(filename);
         if (!_clientHandler.FileExists(filename)) {return DokanResult.FileNotFound;}
-        _clientHandler.SetFileTimes(filename, atime, mtime);
+        _clientHandler.SetFileTimes(filename, atime, mtime, ctime);
         return DokanResult.Success;
     }
 
     public NtStatus UnlockFile(string filename, long offset, long length, IDokanFileInfo info)
     {
-        filename = _clientHandler.ConvertFmt(filename);
+        return DokanResult.Success;
+    }
+    
+    public NtStatus LockFile(
+        string filename,
+        long offset,
+        long length,
+        IDokanFileInfo info)
+    {
         return DokanResult.Success;
     }
 
@@ -195,7 +184,6 @@ internal class InstanceHandler : IDokanOperations
         long offset,
         IDokanFileInfo info)
     {
-        filename = _clientHandler.ConvertFmt(filename);
         Task.Run(() => _clientHandler.WriteBuffer(filename, buffer, Convert.ToInt32(offset)));
         writtenBytes = buffer.Length;
         return DokanResult.Success;
@@ -227,7 +215,6 @@ internal class InstanceHandler : IDokanOperations
     public NtStatus EnumerateNamedStreams(string filename, IntPtr enumContext, out string streamName,
         out long streamSize, IDokanFileInfo info)
     {
-        filename = _clientHandler.ConvertFmt(filename);
         streamName = string.Empty;
         streamSize = 0;
         return DokanResult.NotImplemented;
@@ -235,7 +222,6 @@ internal class InstanceHandler : IDokanOperations
 
     public NtStatus FindStreams(string filename, out IList<FileInformation> streams, IDokanFileInfo info)
     {
-        filename = _clientHandler.ConvertFmt(filename);
         streams = new FileInformation[0];
         return DokanResult.NotImplemented;
     }
@@ -243,7 +229,6 @@ internal class InstanceHandler : IDokanOperations
     public NtStatus FindFilesWithPattern(string filename, string searchPattern, out IList<FileInformation> files,
         IDokanFileInfo info)
     {
-        filename = _clientHandler.ConvertFmt(filename);
         files = new FileInformation[0];
         return DokanResult.NotImplemented;
     }
