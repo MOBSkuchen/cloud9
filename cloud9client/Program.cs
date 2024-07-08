@@ -38,18 +38,23 @@ class Program
         return new SftpDriver(instanceData);
     }
 
-    public static void SpawnClient(String method, String configFilePath)
+    public static CloneDriver CreateCloneClient(InstanceData instanceData)
+    {
+        return new CloneDriver(instanceData);
+    }
+
+    public static void SpawnClient(String configFilePath)
     {
         AssertExpression(File.Exists(configFilePath));
 
         var configLoaded = LoadConfig(configFilePath);
-        AssertHas(["host", "username", "password", "port", "isKeyAuth", "driveName", "remotePath", "mountPath"], configLoaded);
+        AssertHas(new string[] {"method", "host", "username", "password", "port", "isKeyAuth", "driveName", "remotePath", "mountPath"}, configLoaded);
 
         var instanceData = InstanceData.ConvertToInstanceData(configLoaded);
         if (instanceData == null) Error(10, "Corrupted config file");
         
         IClientBlueprint? client = null;
-        switch (method.ToLower())
+        switch (configLoaded["method"].ToLower())
         {
             case "sftp":
             {
@@ -59,6 +64,11 @@ class Program
             case "sock":
             {
                 Error(404, "Not implemented / found");
+                break;
+            }
+            case "clone":
+            {
+                client = CreateCloneClient(instanceData.Value);
                 break;
             }
             default:
@@ -86,7 +96,7 @@ class Program
         switch (exc)
         {
             case "client":
-                if (args.Length > 2) SpawnClient(args[1], args[2]);
+                if (args.Length > 1) SpawnClient(args[1]);
                 else Error(2, "Not enough arguments!");
                 break;
             case "version":
@@ -96,8 +106,8 @@ class Program
                 Console.WriteLine($"Cloud9 CLI Client (version {version})");
                 Console.WriteLine("help - Get help");
                 Console.WriteLine("version - Get version");
-                Console.WriteLine("client <method> <configfile> - Spawn a new client instance");
-                Console.WriteLine("server <method> <configfile> - Spawn a new server instance");
+                Console.WriteLine("client <configfile> - Spawn a new client instance");
+                Console.WriteLine("server <configfile> - Spawn a new server instance");
                 Console.WriteLine("End of help");
                 Console.WriteLine("------------");
                 Console.WriteLine("Allowed client / server methods");
