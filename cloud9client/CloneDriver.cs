@@ -53,8 +53,12 @@ public class CloneDriver : IClientBlueprint
 
     public FileInformation ConstructFileInfo(String path)
     {
-        path = ConvertFmt(path);
         return ConvertFileInfo(new FileInfo(path));
+    }
+
+    public FileInformation ConstructDirInfo(String path)
+    {
+        return ConvertDirInfo(new DirectoryInfo(path));
     }
 
     public FileInformation ConvertFileInfo(object item_)
@@ -63,11 +67,24 @@ public class CloneDriver : IClientBlueprint
         
         return new FileInformation {
             FileName = item.Name,
-            Attributes = (item.Directory != null) ? FileAttributes.Directory : FileAttributes.Normal,
+            Attributes = FileAttributes.Normal,
             LastAccessTime = DateTime.Now,
             LastWriteTime = item.LastWriteTime,
             CreationTime = item.CreationTime,
             Length = item.Length
+        };
+    }
+    
+    public FileInformation ConvertDirInfo(object item_)
+    {
+        DirectoryInfo item = (DirectoryInfo) item_;
+        
+        return new FileInformation {
+            FileName = item.Name,
+            Attributes = FileAttributes.Directory,
+            LastAccessTime = DateTime.Now,
+            LastWriteTime = item.LastWriteTime,
+            CreationTime = item.CreationTime
         };
     }
 
@@ -75,10 +92,14 @@ public class CloneDriver : IClientBlueprint
     {
         path = ConvertFmt(path);
         List<FileInformation> files = new List<FileInformation>();
-        foreach (var item in Directory.EnumerateFileSystemEntries(path))
+        foreach (var item in Directory.EnumerateFiles(path))
         {
-            if (item == "." || item == "..") continue;
-            files.Add(GetFileInfo(item));
+            files.Add(ConstructFileInfo(item));
+        }
+
+        foreach (var item in Directory.EnumerateDirectories(path))
+        {
+            files.Add(ConstructDirInfo(item));
         }
         return files;
     }
