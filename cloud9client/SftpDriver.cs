@@ -79,7 +79,6 @@ public class SftpDriver : IClientBlueprint {
 
     public FileInformation ConstructFileInfo(String path)
     {
-        path = ConvertFmt(path);
         return ConvertFileInfo(_client.Get(path));
     }
 
