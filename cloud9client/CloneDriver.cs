@@ -167,7 +167,9 @@ public class CloneDriver : IClientBlueprint
 
     public (long totalBytes, long freeBytes) GetDriveSize()
     {
-        return (0, 0);
+        string rootDir = Directory.GetDirectoryRoot(_instanceData.RemotePath);
+        DriveInfo driveInfo = new DriveInfo(rootDir);
+        return (driveInfo.TotalSize, driveInfo.AvailableFreeSpace);
     }
 
     public void SetFileAttributes(string path, FileAttributes fileAttributes)
