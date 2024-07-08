@@ -3,8 +3,11 @@ namespace cloud9client;
 
 public interface IClientBlueprint
 {
+    // IMPORTANT!
+    // The conversion of virtual path to real path
+    // should from now on be handled by the client driver
     public String ConvertFmt(String previous);
-    public void Disconnect();
+    public void Close();
     public bool DeletePath(String path);
     public FileInformation? ConstructFileInfoMNull(String path);
     public FileInformation ConstructFileInfo(String path);
@@ -13,11 +16,15 @@ public interface IClientBlueprint
     public bool FileExists(String path);
     public int ReadBuffer(String path, byte[] bytes, int length, int offset);
     public void WriteBuffer(String path, byte[] buffer, int offset);
-    public void SetFileTimes(string path, DateTime? atime, DateTime? mtime);
+    // atime : Last access time
+    // mtime : Last write time
+    // ctime : Creation time
+    public void SetFileTimes(string path, DateTime? atime, DateTime? mtime, DateTime? ctime);
     public void CreateFile(String path);
     public void CreateDirectory(String path);
     public void MoveFile(String oldpath, String newpath);
     public void SetFileSize(String path, long size);
     public FileInformation GetFileInfo(String path);
     public (long totalBytes, long freeBytes) GetDriveSize();
+    public void SetFileAttributes(String path, FileAttributes fileAttributes);
 }
