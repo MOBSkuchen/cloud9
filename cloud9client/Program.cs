@@ -54,7 +54,7 @@ class Program
         if (instanceData == null) Error(10, "Corrupted config file");
         
         IClientBlueprint? client = null;
-        switch (configLoaded["method"].ToLower())
+        switch (instanceData.Value.Method.ToLower())
         {
             case "sftp":
             {
