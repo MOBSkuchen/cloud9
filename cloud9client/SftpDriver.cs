@@ -2,6 +2,7 @@
 using DokanNet;
 using Renci.SshNet;
 using Renci.SshNet.Sftp;
+using FileAccess = System.IO.FileAccess;
 
 namespace cloud9client;
 
@@ -222,5 +223,17 @@ public class SftpDriver : IClientBlueprint {
     {
         path = ConvertFmt(path);
         File.SetAttributes(path, fileAttributes);
+    }
+
+    public Stream GetFileStream(string path, FileMode mode, FileAccess access, FileShare share)
+    {
+        path = ConvertFmt(path);
+        return _client.Open(path, mode, access);
+    }
+
+    public bool IsDirectory(string path)
+    {
+        path = ConvertFmt(path);
+        return _client.GetAttributes(path).IsDirectory;
     }
 }

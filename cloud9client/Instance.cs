@@ -24,7 +24,7 @@ public class Instance
                 var dokanBuilder = new DokanInstanceBuilder(dokan)
                     .ConfigureOptions(options =>
                     {
-                        options.Options = DokanOptions.DebugMode | DokanOptions.StderrOutput;
+                        options.Options = DokanOptions.StderrOutput;
                         options.MountPoint = instanceData.MountPath;
                     });
                 using (var dokanInstance = dokanBuilder.Build(rfs))

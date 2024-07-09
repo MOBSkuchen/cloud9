@@ -1,4 +1,5 @@
 ﻿using DokanNet;
+using FileAccess = System.IO.FileAccess;
 
 namespace cloud9client;
 
@@ -176,5 +177,17 @@ public class CloneDriver : IClientBlueprint
     {
         path = ConvertFmt(path);
         File.SetAttributes(path, fileAttributes);
+    }
+
+    public Stream GetFileStream(string path, FileMode mode, System.IO.FileAccess access, FileShare share)
+    {
+        path = ConvertFmt(path);
+        return File.Open(path, mode, access, share);
+    }
+
+    public bool IsDirectory(string path)
+    {
+        path = ConvertFmt(path);
+        return File.GetAttributes(path) == FileAttributes.Directory;
     }
 }

@@ -27,4 +27,6 @@ public interface IClientBlueprint
     public FileInformation GetFileInfo(String path);
     public (long totalBytes, long freeBytes) GetDriveSize();
     public void SetFileAttributes(String path, FileAttributes fileAttributes);
+    public Stream GetFileStream(string path, FileMode mode, System.IO.FileAccess access, FileShare share);
+    public bool IsDirectory(string path);
 }
