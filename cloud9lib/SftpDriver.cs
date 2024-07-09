@@ -4,7 +4,7 @@ using Renci.SshNet;
 using Renci.SshNet.Sftp;
 using FileAccess = System.IO.FileAccess;
 
-namespace cloud9client;
+namespace cloud9lib;
 
 public class SftpDriver : IClientBlueprint {
     

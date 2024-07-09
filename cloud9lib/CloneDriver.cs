@@ -1,7 +1,7 @@
 ﻿using DokanNet;
 using FileAccess = System.IO.FileAccess;
 
-namespace cloud9client;
+namespace cloud9lib;
 
 public class CloneDriver : IClientBlueprint
 {

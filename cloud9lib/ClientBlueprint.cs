@@ -1,5 +1,5 @@
 ﻿using DokanNet;
-namespace cloud9client;
+namespace cloud9lib;
 
 public interface IClientBlueprint
 {

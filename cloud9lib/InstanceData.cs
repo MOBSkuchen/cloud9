@@ -1,4 +1,4 @@
-﻿namespace cloud9client;
+﻿namespace cloud9lib;
 
 public struct InstanceData
 {

@@ -1,7 +1,7 @@
 ﻿using DokanNet;
 using DokanNet.Logging;
 
-namespace cloud9client;
+namespace cloud9lib;
 
 public class Instance
 {

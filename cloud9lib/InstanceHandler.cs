@@ -2,7 +2,7 @@
 using DokanNet;
 using FileAccess = DokanNet.FileAccess;
 
-namespace cloud9client;
+namespace cloud9lib;
 
 internal class InstanceHandler : IDokanOperations
 {
