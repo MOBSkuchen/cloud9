@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using System.Security.AccessControl;
 using DokanNet;
 using Renci.SshNet;
 using Renci.SshNet.Sftp;
@@ -236,4 +237,5 @@ public class SftpDriver : IClientBlueprint {
         path = ConvertFmt(path);
         return _client.GetAttributes(path).IsDirectory;
     }
+    public FileSystemSecurity? GetFileSystemSecurity(string path) { return null; }
 }

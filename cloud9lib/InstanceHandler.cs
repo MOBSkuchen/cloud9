@@ -245,10 +245,10 @@ public class InstanceHandler : IInstanceHandlerBlueprint
     }
 
     public NtStatus GetFileSecurity(string filename, out FileSystemSecurity security, AccessControlSections sections,
-        IDokanFileInfo info)
+            IDokanFileInfo info)
     {
-        security = null;
-        return DokanResult.Error;
+            security = _clientHandler.GetFileSystemSecurity(filename);
+            return security == null ? DokanResult.Error : DokanResult.Success;
     }
 
     public NtStatus SetFileSecurity(string filename, FileSystemSecurity security, AccessControlSections sections,

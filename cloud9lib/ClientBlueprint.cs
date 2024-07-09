@@ -1,4 +1,5 @@
-﻿using DokanNet;
+﻿using System.Security.AccessControl;
+using DokanNet;
 namespace cloud9lib;
 
 public interface IClientBlueprint
@@ -29,4 +30,6 @@ public interface IClientBlueprint
     public void SetFileAttributes(String path, FileAttributes fileAttributes);
     public Stream GetFileStream(string path, FileMode mode, System.IO.FileAccess access, FileShare share);
     public bool IsDirectory(string path);
+    // Return null if this is not supported
+    public FileSystemSecurity? GetFileSystemSecurity(string path);
 }

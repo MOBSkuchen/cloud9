@@ -1,4 +1,5 @@
-﻿using DokanNet;
+﻿using System.Security.AccessControl;
+using DokanNet;
 using FileAccess = System.IO.FileAccess;
 
 namespace cloud9lib;
@@ -189,5 +190,11 @@ public class CloneDriver : IClientBlueprint
     {
         path = ConvertFmt(path);
         return File.GetAttributes(path) == FileAttributes.Directory;
+    }
+
+    public FileSystemSecurity GetFileSystemSecurity(string path)
+    {
+        path = ConvertFmt(path);
+        return (new FileInfo(path)).GetAccessControl();
     }
 }
