@@ -5,7 +5,7 @@ namespace cloud9lib;
 
 public class Instance
 {
-    public static void CreateClientInstance(InstanceData instanceData, IClientBlueprint clientBlueprint)
+    public static void CreateClientInstance(IInstanceHandlerBlueprint instanceHandler)
     {
         try
         {
@@ -18,16 +18,14 @@ public class Instance
                     e.Cancel = true;
                     mre.Set();
                 };
-
-                var rfs = new InstanceHandler(instanceData, clientBlueprint);
                 
                 var dokanBuilder = new DokanInstanceBuilder(dokan)
                     .ConfigureOptions(options =>
                     {
                         options.Options = DokanOptions.StderrOutput;
-                        options.MountPoint = instanceData.MountPath;
+                        options.MountPoint = instanceHandler.ExposeInstanceData().MountPath;
                     });
-                using (var dokanInstance = dokanBuilder.Build(rfs))
+                using (var dokanInstance = dokanBuilder.Build(instanceHandler))
                 {
                     mre.WaitOne();
                 }

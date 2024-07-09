@@ -4,7 +4,7 @@ using FileAccess = DokanNet.FileAccess;
 
 namespace cloud9lib;
 
-internal class InstanceHandler : IDokanOperations
+public class InstanceHandler : IInstanceHandlerBlueprint
 {
     private readonly IClientBlueprint _clientHandler;
     private readonly InstanceData _instanceData;
@@ -16,6 +16,10 @@ internal class InstanceHandler : IDokanOperations
         _clientHandler = clientHandler;
         _instanceData = instanceData;
     }
+
+    public InstanceData ExposeInstanceData() { return _instanceData; }
+
+    public IClientBlueprint ExposeClient() { return _clientHandler; }
 
     public void Cleanup(string filename, IDokanFileInfo info) { }
 

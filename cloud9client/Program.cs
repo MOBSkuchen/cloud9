@@ -75,7 +75,7 @@ class Program
         }
         if (client == null) return;
         
-        Instance.CreateClientInstance(instanceData.Value, client);
+        Instance.CreateClientInstance(new InstanceHandler(instanceData.Value, client));
     }
     
     public static void Error(int err) {Error(err, "No message provided.");}
