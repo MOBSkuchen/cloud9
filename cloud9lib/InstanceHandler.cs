@@ -41,41 +41,22 @@ public class InstanceHandler : IInstanceHandlerBlueprint
         FileAttributes attributes,
         IDokanFileInfo info)
     {
-        if (mode == FileMode.CreateNew || mode == FileMode.Create)
-        {
-            if (info.IsDirectory)
-                _clientHandler.CreateDirectory(filename);
-            else 
-                _clientHandler.CreateFile(filename);
-        }
-        if (!_clientHandler.FileExists(filename))
-        {
-            return DokanResult.FileNotFound;
-        }
+        if (mode is FileMode.CreateNew or FileMode.Create) {
+            if (info.IsDirectory) _clientHandler.CreateDirectory(filename);
+            else _clientHandler.CreateFile(filename); }
+        
+        if (!_clientHandler.FileExists(filename)) { return DokanResult.FileNotFound; }
 
-        if (_clientHandler.IsDirectory(filename))
-        {
-            info.IsDirectory = true;
-            return DokanResult.Success;
-        } else if (!_clientHandler.IsDirectory(filename) && info.IsDirectory)
-        {
-            return DokanResult.NotADirectory;
+        switch (_clientHandler.IsDirectory(filename)) {
+            case true:
+                info.IsDirectory = true;
+                return DokanResult.Success;
+            case false when info.IsDirectory:
+                return DokanResult.NotADirectory;
+            default:
+                info.Context = _clientHandler.GetFileStream(filename, mode, IInstanceHandlerBlueprint.ConvertFileAccess(access), share);
+                return DokanResult.Success;
         }
-        System.IO.FileAccess neoAccess;
-        if (access == FileAccess.ReadData)
-        {
-            neoAccess = System.IO.FileAccess.Read;
-        }
-        else if (access == FileAccess.WriteData)
-        {
-            neoAccess = System.IO.FileAccess.Write;
-        }
-        else
-        {
-            neoAccess = System.IO.FileAccess.ReadWrite;
-        } 
-        info.Context = _clientHandler.GetFileStream(filename, mode, neoAccess, share);
-        return DokanResult.Success;
     }
 
     public NtStatus DeleteDirectory(string filename, IDokanFileInfo info) {
@@ -90,10 +71,7 @@ public class InstanceHandler : IInstanceHandlerBlueprint
         return DokanResult.Success;
     }
 
-    public NtStatus FlushFileBuffers(
-        string filename,
-        IDokanFileInfo info)
-    {
+    public NtStatus FlushFileBuffers(string filename, IDokanFileInfo info) {
         if (info.Context.GetType() != typeof(Stream)) { return DokanResult.InvalidHandle; }
         Stream fileStream = (Stream) info.Context;
         fileStream.Flush();
@@ -103,7 +81,7 @@ public class InstanceHandler : IInstanceHandlerBlueprint
     public NtStatus FindFiles(
         string filename,
         out IList<FileInformation> files,
-        IDokanFileInfo info)
+        IDokanFileInfo info) 
     {
         files = new List<FileInformation>();
         if (!_clientHandler.FileExists(filename)) {return DokanResult.FileNotFound;}
