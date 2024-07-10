@@ -25,11 +25,7 @@ public class InstanceHandler : IInstanceHandlerBlueprint
 
     public void CloseFile(string filename, IDokanFileInfo info)
     {
-        if (info.Context != null && info.Context.GetType() == typeof(FileStream))
-        {
-            FileStream fileStream = (FileStream) info.Context;
-            fileStream.Close();
-        }
+        _clientHandler.CloseHandle(info.Context);
     }
 
     public NtStatus CreateFile(
@@ -58,21 +54,17 @@ public class InstanceHandler : IInstanceHandlerBlueprint
     }
 
     public NtStatus DeleteDirectory(string filename, IDokanFileInfo info) {
-        if (!_clientHandler.FileExists(filename)) {return DokanResult.FileNotFound;}
         _clientHandler.DeletePath(filename);
         return DokanResult.Success;
     }
 
     public NtStatus DeleteFile(string filename, IDokanFileInfo info) {
-        if (!_clientHandler.FileExists(filename)) {return DokanResult.FileNotFound;}
         _clientHandler.DeletePath(filename);
         return DokanResult.Success;
     }
 
     public NtStatus FlushFileBuffers(string filename, IDokanFileInfo info) {
-        if (info.Context.GetType() != typeof(Stream)) { return DokanResult.InvalidHandle; }
-        Stream fileStream = (Stream) info.Context;
-        fileStream.Flush();
+        _clientHandler.FlushHandle(info.Context);
         return DokanResult.Success;
     }
 
@@ -117,13 +109,13 @@ public class InstanceHandler : IInstanceHandlerBlueprint
 
     public NtStatus SetEndOfFile(string filename, long length, IDokanFileInfo info)
     {
-        ((FileStream) info.Context).SetLength(length);
+        _clientHandler.SetIoLength(info.Context, length);
         return DokanResult.Success;
     }
 
     public NtStatus SetAllocationSize(string filename, long length, IDokanFileInfo info)
     {
-        ((FileStream) info.Context).SetLength(length);
+        _clientHandler.SetIoLength(info.Context, length);
         return DokanResult.Success;
     }
 

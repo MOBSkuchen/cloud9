@@ -259,4 +259,22 @@ public class SftpDriver : IClientBlueprint {
         fileStreamT.Write(buffer);
         return buffer.Length;
     }
+
+    public void CloseHandle(object fileStream)
+    {
+        SftpFileStream fileStreamT = (SftpFileStream) fileStream;
+        fileStreamT.Close();
+    }
+
+    public void FlushHandle(object fileStream)
+    {
+        SftpFileStream fileStreamT = (SftpFileStream) fileStream;
+        fileStreamT.Flush();
+    }
+
+    public void SetIoLength(object fileStream, long length)
+    {
+        SftpFileStream fileStreamT = (SftpFileStream) fileStream;
+        fileStreamT.SetLength(length);
+    }
 }

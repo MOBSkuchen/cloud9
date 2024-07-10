@@ -217,4 +217,22 @@ public class CloneDriver : IClientBlueprint
         fileStreamT.Write(buffer);
         return buffer.Length;
     }
+
+    public void CloseHandle(object fileStream)
+    {
+        FileStream fileStreamT = (FileStream) fileStream;
+        fileStreamT.Close();
+    }
+
+    public void FlushHandle(object fileStream)
+    {
+        FileStream fileStreamT = (FileStream) fileStream;
+        fileStreamT.Flush();
+    }
+
+    public void SetIoLength(object fileStream, long length)
+    {
+        FileStream fileStreamT = (FileStream) fileStream;
+        fileStreamT.SetLength(length);
+    }
 }

@@ -35,4 +35,7 @@ public interface IClientBlueprint
     public List<FileInformation> PatternSearch(String path);
     public int IoReadAction(object fileStream, byte[] buffer, long offset);
     public int IoWriteAction(object fileStream, byte[] buffer, long offset);
+    public void CloseHandle(object fileStream);
+    public void FlushHandle(object fileStream);
+    public void SetIoLength(object fileStream, long length);
 }
