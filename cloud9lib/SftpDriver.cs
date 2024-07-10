@@ -244,4 +244,19 @@ public class SftpDriver : IClientBlueprint {
     {
         return new List<FileInformation>();
     }
+    
+    public int IoReadAction(object fileStream, byte[] buffer, long offset)
+    {
+        SftpFileStream fileStreamT = (SftpFileStream) fileStream;
+        fileStreamT.Seek(offset, SeekOrigin.Begin);
+        return fileStreamT.Read(buffer, 0, buffer.Length);
+    }
+
+    public int IoWriteAction(object fileStream, byte[] buffer, long offset)
+    {
+        SftpFileStream fileStreamT = (SftpFileStream) fileStream;
+        fileStreamT.Seek(offset, SeekOrigin.Begin);
+        fileStreamT.Write(buffer);
+        return buffer.Length;
+    }
 }

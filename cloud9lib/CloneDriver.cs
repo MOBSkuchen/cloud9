@@ -202,4 +202,19 @@ public class CloneDriver : IClientBlueprint
     {
         throw new NotImplementedException();
     }
+
+    public int IoReadAction(object fileStream, byte[] buffer, long offset)
+    {
+        FileStream fileStreamT = (FileStream) fileStream;
+        fileStreamT.Seek(offset, SeekOrigin.Begin);
+        return fileStreamT.Read(buffer, 0, buffer.Length);
+    }
+
+    public int IoWriteAction(object fileStream, byte[] buffer, long offset)
+    {
+        FileStream fileStreamT = (FileStream) fileStream;
+        fileStreamT.Seek(offset, SeekOrigin.Begin);
+        fileStreamT.Write(buffer);
+        return buffer.Length;
+    }
 }

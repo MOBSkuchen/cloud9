@@ -33,4 +33,6 @@ public interface IClientBlueprint
     // Return null if this is not supported
     public FileSystemSecurity? GetFileSystemSecurity(string path);
     public List<FileInformation> PatternSearch(String path);
+    public int IoReadAction(object fileStream, byte[] buffer, long offset);
+    public int IoWriteAction(object fileStream, byte[] buffer, long offset);
 }

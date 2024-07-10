@@ -45,8 +45,6 @@ public class InstanceHandler : IInstanceHandlerBlueprint
             if (info.IsDirectory) _clientHandler.CreateDirectory(filename);
             else _clientHandler.CreateFile(filename); }
         
-        if (!_clientHandler.FileExists(filename)) { return DokanResult.FileNotFound; }
-
         switch (_clientHandler.IsDirectory(filename)) {
             case true:
                 info.IsDirectory = true;
@@ -83,8 +81,6 @@ public class InstanceHandler : IInstanceHandlerBlueprint
         out IList<FileInformation> files,
         IDokanFileInfo info) 
     {
-        files = new List<FileInformation>();
-        if (!_clientHandler.FileExists(filename)) {return DokanResult.FileNotFound;}
         files = _clientHandler.ListFiles(filename);
         return DokanResult.Success;
     }
@@ -94,8 +90,6 @@ public class InstanceHandler : IInstanceHandlerBlueprint
         out FileInformation fileinfo,
         IDokanFileInfo info)
     {
-        fileinfo = new FileInformation();
-        if (!_clientHandler.FileExists(filename)) {return DokanResult.FileNotFound;}
         fileinfo = _clientHandler.GetFileInfo(filename);
         return DokanResult.Success;
     }
@@ -117,37 +111,18 @@ public class InstanceHandler : IInstanceHandlerBlueprint
         long offset,
         IDokanFileInfo info)
     {
-        readBytes = 0;
-        if (!_clientHandler.FileExists(filename))
-        {
-            return DokanResult.FileNotFound;
-        }
-        if ((info.Context == null) || info.Context.GetType() != typeof(FileStream))
-        {
-            return DokanResult.InvalidHandle;
-        }
-        FileStream fileStream = (FileStream) info.Context;
-        fileStream.Seek(offset, SeekOrigin.Begin);
-        readBytes = fileStream.Read(buffer, 0, buffer.Length);
+        readBytes = _clientHandler.IoReadAction(info.Context, buffer, offset);
         return DokanResult.Success;
     }
 
     public NtStatus SetEndOfFile(string filename, long length, IDokanFileInfo info)
     {
-        if (!_clientHandler.FileExists(filename)) {return DokanResult.FileNotFound;}
-
-        if (info.Context.GetType() != typeof(FileStream))
-        {
-            return DokanResult.InvalidHandle;
-        }
         ((FileStream) info.Context).SetLength(length);
         return DokanResult.Success;
     }
 
     public NtStatus SetAllocationSize(string filename, long length, IDokanFileInfo info)
     {
-        if (!_clientHandler.FileExists(filename)) {return DokanResult.FileNotFound;}
-        if (info.Context.GetType() != typeof(FileStream)) { return DokanResult.InvalidHandle; }
         ((FileStream) info.Context).SetLength(length);
         return DokanResult.Success;
     }
@@ -168,7 +143,6 @@ public class InstanceHandler : IInstanceHandlerBlueprint
         DateTime? mtime,
         IDokanFileInfo info)
     {
-        if (!_clientHandler.FileExists(filename)) {return DokanResult.FileNotFound;}
         _clientHandler.SetFileTimes(filename, atime, mtime, ctime);
         return DokanResult.Success;
     }
@@ -218,19 +192,7 @@ public class InstanceHandler : IInstanceHandlerBlueprint
         long offset,
         IDokanFileInfo info)
     {
-        writtenBytes = 0;
-        if (!_clientHandler.FileExists(filename))
-        {
-            return DokanResult.FileNotFound;
-        }
-        if ((info.Context == null) || info.Context.GetType() != typeof(FileStream))
-        {
-            return DokanResult.InvalidHandle;
-        }
-        FileStream fileStream = (FileStream)info.Context;
-        fileStream.Seek(offset, SeekOrigin.Begin);
-        fileStream.Write(buffer);
-        writtenBytes = buffer.Length;
+        writtenBytes = _clientHandler.IoWriteAction(info.Context, buffer, offset);
         return DokanResult.Success;
     }
 
