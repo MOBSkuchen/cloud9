@@ -237,5 +237,11 @@ public class SftpDriver : IClientBlueprint {
         path = ConvertFmt(path);
         return _client.GetAttributes(path).IsDirectory;
     }
+    
     public FileSystemSecurity? GetFileSystemSecurity(string path) { return null; }
+    
+    public List<FileInformation> PatternSearch(string path)
+    {
+        return new List<FileInformation>();
+    }
 }

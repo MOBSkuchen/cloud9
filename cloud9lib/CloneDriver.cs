@@ -197,4 +197,9 @@ public class CloneDriver : IClientBlueprint
         path = ConvertFmt(path);
         return (new FileInfo(path)).GetAccessControl();
     }
+
+    public List<FileInformation> PatternSearch(string path)
+    {
+        throw new NotImplementedException();
+    }
 }

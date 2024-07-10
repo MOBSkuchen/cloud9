@@ -32,4 +32,5 @@ public interface IClientBlueprint
     public bool IsDirectory(string path);
     // Return null if this is not supported
     public FileSystemSecurity? GetFileSystemSecurity(string path);
+    public List<FileInformation> PatternSearch(String path);
 }
