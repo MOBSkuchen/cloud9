@@ -116,25 +116,6 @@ public class SftpDriver : IClientBlueprint {
         path = ConvertFmt(path);
         return _client.Exists(path);
     }
-
-    public int ReadBuffer(String path, byte[] bytes, int length, int offset)
-    {
-        path = ConvertFmt(path);
-        var reader = _client.OpenRead(path);
-        reader.Seek(offset, SeekOrigin.Begin);
-        return reader.Read(bytes, 0, length);
-    }
-
-    public void WriteBuffer(String path, byte[] buffer, int offset)
-    {
-        path = ConvertFmt(path);
-        var writer = _client.OpenWrite(path);
-        writer.Seek(offset, SeekOrigin.Begin);
-        writer.Write(buffer);
-        writer.Flush();
-        UpdateFinfoCacheFor(path);
-    }
-
     public void SetFileTimes(string path, DateTime? atime, DateTime? mtime, DateTime? ctime)
     {
         path = ConvertFmt(path);
@@ -163,14 +144,6 @@ public class SftpDriver : IClientBlueprint {
         _client.Get(oldpath).MoveTo(newpath);
         UpdateFinfoCacheFor(newpath);
         UpdateFinfoCacheFor(oldpath);
-    }
-
-    public void SetFileSize(String path, long size)
-    {
-        path = ConvertFmt(path);
-        var handle = _client.Open(path, FileMode.Open);
-        handle.SetLength(size);
-        UpdateFinfoCacheFor(path);
     }
 
     public FileInformation GetFileInfo(String path)
@@ -262,18 +235,21 @@ public class SftpDriver : IClientBlueprint {
 
     public void CloseHandle(object fileStream)
     {
+        Console.WriteLine(fileStream + "!!!");
         SftpFileStream fileStreamT = (SftpFileStream) fileStream;
         fileStreamT.Close();
     }
 
     public void FlushHandle(object fileStream)
     {
+        Console.WriteLine(fileStream + "!!!");
         SftpFileStream fileStreamT = (SftpFileStream) fileStream;
         fileStreamT.Flush();
     }
 
     public void SetIoLength(object fileStream, long length)
     {
+        Console.WriteLine(fileStream + "!!!");
         SftpFileStream fileStreamT = (SftpFileStream) fileStream;
         fileStreamT.SetLength(length);
     }

@@ -10,13 +10,10 @@ public interface IClientBlueprint
     public String ConvertFmt(String previous);
     public void Close();
     public bool DeletePath(String path);
-    public FileInformation? ConstructFileInfoMNull(String path);
     public FileInformation ConstructFileInfo(String path);
     public FileInformation ConvertFileInfo(object item);
     public List<FileInformation> ListFiles(String path);
     public bool FileExists(String path);
-    public int ReadBuffer(String path, byte[] bytes, int length, int offset);
-    public void WriteBuffer(String path, byte[] buffer, int offset);
     // atime : Last access time
     // mtime : Last write time
     // ctime : Creation time
@@ -24,7 +21,6 @@ public interface IClientBlueprint
     public void CreateFile(String path);
     public void CreateDirectory(String path);
     public void MoveFile(String oldpath, String newpath);
-    public void SetFileSize(String path, long size);
     public FileInformation GetFileInfo(String path);
     public (long totalBytes, long freeBytes) GetDriveSize();
     public void SetFileAttributes(String path, FileAttributes fileAttributes);

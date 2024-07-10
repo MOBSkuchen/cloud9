@@ -46,13 +46,6 @@ public class CloneDriver : IClientBlueprint
             return false;
         }
     }
-
-    public FileInformation? ConstructFileInfoMNull(String path)
-    {
-        path = ConvertFmt(path);
-        if (!FileExists(path)) return null; return ConstructFileInfo(path);
-    }
-
     public FileInformation ConstructFileInfo(String path)
     {
         return ConvertFileInfo(new FileInfo(path));
@@ -112,21 +105,6 @@ public class CloneDriver : IClientBlueprint
         return Path.Exists(path);
     }
 
-    public int ReadBuffer(string path, byte[] bytes, int length, int offset)
-    {
-        path = ConvertFmt(path);
-        var readStream = File.OpenRead(path);
-        return readStream.Read(bytes, offset, length);
-    }
-
-    public void WriteBuffer(string path, byte[] buffer, int offset)
-    {
-        path = ConvertFmt(path);
-        var writeBuffer = File.OpenWrite(path);
-        writeBuffer.Write(buffer, offset, buffer.Length);
-        writeBuffer.Flush();
-    }
-
     public void SetFileTimes(string path, DateTime? atime, DateTime? mtime, DateTime? ctime)
     {
         path = ConvertFmt(path);
@@ -152,13 +130,6 @@ public class CloneDriver : IClientBlueprint
         oldpath = ConvertFmt(oldpath);
         newpath = ConvertFmt(newpath);
         File.Move(oldpath, newpath);
-    }
-
-    public void SetFileSize(string path, long size)
-    {
-        path = ConvertFmt(path);
-        var f = File.Open(path, FileMode.Open);
-        f.SetLength(size);
     }
 
     public FileInformation GetFileInfo(string path)
