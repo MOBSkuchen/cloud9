@@ -21,7 +21,10 @@ public class InstanceHandler : IInstanceHandlerBlueprint
 
     public IClientBlueprint ExposeClient() { return _clientHandler; }
 
-    public void Cleanup(string filename, IDokanFileInfo info) { }
+    public void Cleanup(string filename, IDokanFileInfo info)
+    {
+        _clientHandler.CloseHandle(info.Context);
+    }
 
     public void CloseFile(string filename, IDokanFileInfo info)
     {
