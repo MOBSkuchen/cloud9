@@ -6,6 +6,7 @@ public interface IInstanceHandlerBlueprint : IDokanOperations
 {
     public InstanceData ExposeInstanceData();
     public IClientBlueprint ExposeClient();
+    public IFileManagementInstr ExposeFileManagement();
 
     public static System.IO.FileAccess ConvertFileAccess(DokanNet.FileAccess fileAccess)
     {

@@ -8,19 +8,26 @@ public class InstanceHandler : IInstanceHandlerBlueprint
 {
     private readonly IClientBlueprint _clientHandler;
     private readonly InstanceData _instanceData;
+    private readonly IFileManagementInstr _fileManagement;
     
     #region DokanOperations member
 
-    public InstanceHandler(InstanceData instanceData, IClientBlueprint clientHandler)
+    public InstanceHandler(InstanceData instanceData, IClientBlueprint clientHandler, IFileManagementInstr fileManagement)
     {
         _clientHandler = clientHandler;
         _instanceData = instanceData;
+        _fileManagement = fileManagement;
     }
 
     public InstanceData ExposeInstanceData() { return _instanceData; }
 
     public IClientBlueprint ExposeClient() { return _clientHandler; }
 
+    public IFileManagementInstr ExposeFileManagement()
+    {
+        return _fileManagement;
+    }
+    
     public void Cleanup(string filename, IDokanFileInfo info)
     {
         _clientHandler.CloseHandle(info.Context);
