@@ -74,8 +74,10 @@ class Program
             }
         }
         if (client == null) return;
-        
-        Instance.CreateClientInstance(new InstanceHandler(instanceData.Value, client));
+        var fileManagement = new CloneFileManagement();
+        var instHandler = new InstanceHandler(instanceData.Value, client, fileManagement);
+        fileManagement.DepositInstanceHandler(instHandler);
+        Instance.CreateClientInstance(instHandler);
     }
     
     public static void Error(int err) {Error(err, "No message provided.");}

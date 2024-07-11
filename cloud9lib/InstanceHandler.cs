@@ -48,28 +48,28 @@ public class InstanceHandler : IInstanceHandlerBlueprint
         IDokanFileInfo info)
     {
         if (mode is FileMode.CreateNew or FileMode.Create) {
-            if (info.IsDirectory) _clientHandler.CreateDirectory(filename);
-            else _clientHandler.CreateFile(filename); }
+            if (info.IsDirectory && _fileManagement.GetAllowCreate().Item2) _clientHandler.CreateDirectory(_fileManagement.GenerateDirName(filename));
+            else if (_fileManagement.GetAllowCreate().Item1) _clientHandler.CreateFile(_fileManagement.GenerateFileName(filename)); }
         
-        switch (_clientHandler.IsDirectory(filename)) {
+        switch (_clientHandler.IsDirectory(_fileManagement.GenerateDirName(filename))) {
             case true:
                 info.IsDirectory = true;
                 return DokanResult.Success;
             case false when info.IsDirectory:
                 return DokanResult.NotADirectory;
             default:
-                info.Context = _clientHandler.GetFileStream(filename, mode, IInstanceHandlerBlueprint.ConvertFileAccess(access), share);
+                info.Context = _clientHandler.GetFileStream(_fileManagement.GenerateFileName(filename), mode, IInstanceHandlerBlueprint.ConvertFileAccess(access), share);
                 return DokanResult.Success;
         }
     }
 
     public NtStatus DeleteDirectory(string filename, IDokanFileInfo info) {
-        _clientHandler.DeletePath(filename);
+        _clientHandler.DeletePath(_fileManagement.GenerateDirName(filename));
         return DokanResult.Success;
     }
 
     public NtStatus DeleteFile(string filename, IDokanFileInfo info) {
-        _clientHandler.DeletePath(filename);
+        _clientHandler.DeletePath(_fileManagement.GenerateFileName(filename));
         return DokanResult.Success;
     }
 
@@ -81,9 +81,9 @@ public class InstanceHandler : IInstanceHandlerBlueprint
     public NtStatus FindFiles(
         string filename,
         out IList<FileInformation> files,
-        IDokanFileInfo info) 
+        IDokanFileInfo info)
     {
-        files = _clientHandler.ListFiles(filename);
+        files = _fileManagement.ListFiles(filename);
         return DokanResult.Success;
     }
 
@@ -92,7 +92,7 @@ public class InstanceHandler : IInstanceHandlerBlueprint
         out FileInformation fileinfo,
         IDokanFileInfo info)
     {
-        fileinfo = _clientHandler.GetFileInfo(filename);
+        fileinfo = _clientHandler.GetFileInfo(_fileManagement.GenerateFileName(filename));
         return DokanResult.Success;
     }
 
@@ -102,7 +102,10 @@ public class InstanceHandler : IInstanceHandlerBlueprint
         bool replace,
         IDokanFileInfo info)
     {
-        _clientHandler.MoveFile(filename, newname);
+        if (info.IsDirectory && _fileManagement.GetAllowMove().Item2) return DokanResult.AccessDenied;
+        if (!info.IsDirectory && _fileManagement.GetAllowMove().Item1) return DokanResult.AccessDenied;
+        
+        _clientHandler.MoveFile(_fileManagement.GenerateFileName(filename), _fileManagement.GenerateFileName(newname));
         return DokanResult.Success;
     }
 
@@ -134,7 +137,7 @@ public class InstanceHandler : IInstanceHandlerBlueprint
         FileAttributes attr,
         IDokanFileInfo info)
     {
-        _clientHandler.SetFileAttributes(filename, attr);
+        _clientHandler.SetFileAttributes(_fileManagement.GenerateFileName(filename), attr);
         return DokanResult.Success;
     }
 
@@ -145,7 +148,7 @@ public class InstanceHandler : IInstanceHandlerBlueprint
         DateTime? mtime,
         IDokanFileInfo info)
     {
-        _clientHandler.SetFileTimes(filename, atime, mtime, ctime);
+        _clientHandler.SetFileTimes(_fileManagement.GenerateFileName(filename), atime, mtime, ctime);
         return DokanResult.Success;
     }
 
