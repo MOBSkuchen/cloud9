@@ -27,10 +27,10 @@ public class CloneFileManagement : IFileManagementInstr
     private IInstanceHandlerBlueprint _instanceHandler;
     
     public string GenerateFileName(string originalFileName)
-    { return _instanceHandler.ExposeClient().ConvertFmt(originalFileName); }
+    { return originalFileName; }
 
     public string GenerateDirName(string originalDirName)
-    { return _instanceHandler.ExposeClient().ConvertFmt(originalDirName); }
+    { return originalDirName; }
 
     public List<FileInformation> ListFiles(string path)
     { return _instanceHandler.ExposeClient().ListFiles(path); }
@@ -53,24 +53,13 @@ public class CloneFileManagement : IFileManagementInstr
 public class ExtensionSortedFileManagement : IFileManagementInstr
 {
     private IInstanceHandlerBlueprint _instanceHandler;
-    public static (string FileName, string FileExtension) GetFileNameAndExtension(string filePath)
-    {
-        if (string.IsNullOrWhiteSpace(filePath))
-        {
-            throw new ArgumentException("File path cannot be null or empty.", nameof(filePath));
-        }
-
-        filePath = filePath.Split("/")[-1];
-        string fileName = Path.GetFileNameWithoutExtension(filePath);
-        string fileExtension = Path.GetExtension(filePath);
-
-        return (fileName, fileExtension);
-    }
     
     public string GenerateFileName(string originalFileName)
     {
-        (string fileName, string fileExtension) = GetFileNameAndExtension(originalFileName);
-        return $"{fileExtension}/{fileName}";
+        var fileExt = originalFileName.Split("/", 1);
+        var filename = fileExt[1];
+        var ext = fileExt[0];
+        return $"{filename}.{ext}";
     }
 
     public string GenerateDirName(string originalDirName)
