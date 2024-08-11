@@ -170,7 +170,7 @@ public class Worker : BackgroundService
         Instances.Add(uid, manager);
         
         Thread.Sleep(1000);
-        if (!manager.StatusResponse.IsOk) return (ErrorCodes.Unable2Start, string.Join("\n", manager.StatusResponse.Log));
+        if (!manager.StatusResponse.IsOk) return (ErrorCodes.Unable2Start, manager.StatusResponse.ErrMsg);
         
         return (ErrorCodes.Alright, uid);
     }
@@ -301,6 +301,14 @@ public class Worker : BackgroundService
                 {
                     RespondWrongMethod(resp);
                     return;
+                }
+
+                foreach (var instance in Instances)
+                {
+                    if (!instance.Value.StatusResponse.IsOk)
+                    {
+                        Instances.Remove(instance.Key);
+                    }
                 }
                 resp.StatusCode = 200;
                 await WriteStringResponse(resp, string.Join("\n", Instances.Keys));

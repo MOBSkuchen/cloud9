@@ -7,25 +7,7 @@ public class StatusResponse
 {
     public bool IsOk = true;
     public string? ErrMsg;
-
-    public List<string> Log = new List<string>();
-}
-
-public class CustomLogger(StatusResponse response) : ILogger
-{
-    public bool DebugEnabled { get; } = true;
-
-    public void Debug(string message, params object[] args) =>
-        response.Log.Add("DEBUG " + string.Format(message, args));
-
-    public void Info(string message, params object[] args) => response.Log.Add("INFO " + string.Format(message, args));
-
-    public void Warn(string message, params object[] args) => response.Log.Add("WARN " + string.Format(message, args));
-
-    public void Error(string message, params object[] args) => response.Log.Add("ERROR " + string.Format(message, args));
-
-    public void Fatal(string message, params object[] args) => response.Log.Add("FATAL " + string.Format(message, args));
-
+    public bool IsDone = false;
 }
 
 public class Instance
@@ -36,13 +18,14 @@ public class Instance
         {
             using (var mre = new ManualResetEvent(false))
             {
-                ILogger dokanLogger = (statusResponse == null ? (new NullLogger()) : (new CustomLogger(statusResponse)));
+                ILogger dokanLogger;
+                dokanLogger = new NullLogger();
                 using (var dokan = new Dokan(dokanLogger))
                 {
                     var dokanBuilder = new DokanInstanceBuilder(dokan)
                         .ConfigureOptions(options =>
                         {
-                            options.Options = DokanOptions.AltStream;
+                            options.Options = statusResponse == null ? DokanOptions.StderrOutput : DokanOptions.AltStream;
                             options.MountPoint = instanceHandler.ExposeInstanceData().MountPath;
                         });
                     using (var dokanInstance = dokanBuilder.Build(instanceHandler))
@@ -52,8 +35,7 @@ public class Instance
 
                         handle.Close();
                     }
-
-                    Console.WriteLine(@"Success");
+                    if (statusResponse != null) statusResponse.IsDone = true;
                 }
             }
         }
@@ -62,6 +44,8 @@ public class Instance
             if (statusResponse != null)
             {
                 statusResponse.IsOk = false;
+                statusResponse.IsDone = true;
+                statusResponse.ErrMsg = ex.Message;
             }
         }
     }
