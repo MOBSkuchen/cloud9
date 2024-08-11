@@ -1,4 +1,6 @@
-﻿namespace cloud9lib;
+﻿using System.Globalization;
+
+namespace cloud9lib;
 
 public struct InstanceData
 {
@@ -40,5 +42,26 @@ public struct InstanceData
             instanceDataDictionary["driveName"],
             instanceDataDictionary["mountPath"], 1.0, 
             instanceDataDictionary["method"]);
+    }
+
+    public Dictionary<string, string> ConvertToDictionary()
+    {
+        Dictionary<string, string> newDict = new();
+        
+        newDict.Add("host", Host);
+        newDict.Add("username", Username);
+        newDict.Add("port", Port.ToString());
+        
+        newDict.Add("Password", Password);
+        newDict.Add("isKeyAuth", IsKeyAuth.ToString());
+        
+        newDict.Add("remotePath", RemotePath);
+        newDict.Add("driveName", DriveName);
+        newDict.Add("mountPath", MountPath);
+        
+        // newDict.Add("protocolVersion", ProtocolVersion.ToString(CultureInfo.CurrentCulture));
+        newDict.Add("method", Method);
+        
+        return newDict;
     }
 }
