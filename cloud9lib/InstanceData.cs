@@ -52,7 +52,7 @@ public struct InstanceData
         newDict.Add("username", Username);
         newDict.Add("port", Port.ToString());
         
-        newDict.Add("Password", Password);
+        newDict.Add("password", Password);
         newDict.Add("isKeyAuth", IsKeyAuth.ToString());
         
         newDict.Add("remotePath", RemotePath);
