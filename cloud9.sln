@@ -4,7 +4,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cloud9client", "cloud9clien
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cloud9lib", "cloud9lib\cloud9lib.csproj", "{B6893FE0-33C4-4EDC-8F58-6A1F443C30FE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cloud9daemon", "cloud9daemon\cloud9daemon.csproj", "{8C60A5A5-17CB-450B-A802-48BB6985A404}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cloud9service", "cloud9service\cloud9service.csproj", "{265EF2A8-CCFE-4164-9F39-62B252056496}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -20,9 +20,9 @@ Global
 		{B6893FE0-33C4-4EDC-8F58-6A1F443C30FE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B6893FE0-33C4-4EDC-8F58-6A1F443C30FE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B6893FE0-33C4-4EDC-8F58-6A1F443C30FE}.Release|Any CPU.Build.0 = Release|Any CPU
-		{8C60A5A5-17CB-450B-A802-48BB6985A404}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{8C60A5A5-17CB-450B-A802-48BB6985A404}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{8C60A5A5-17CB-450B-A802-48BB6985A404}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{8C60A5A5-17CB-450B-A802-48BB6985A404}.Release|Any CPU.Build.0 = Release|Any CPU
+		{265EF2A8-CCFE-4164-9F39-62B252056496}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{265EF2A8-CCFE-4164-9F39-62B252056496}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{265EF2A8-CCFE-4164-9F39-62B252056496}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{265EF2A8-CCFE-4164-9F39-62B252056496}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
