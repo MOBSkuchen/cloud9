@@ -36,11 +36,13 @@ public class InstanceManager
     public static Random Random = new Random();
     public String StartedAt = DateTime.Now.GetTimestamp();
 
+    public StatusResponse StatusResponse = new StatusResponse();
+
     public InstanceManager(InstanceData instanceData, InstanceHandler instHandler)
     {
         InstanceData = instanceData;
         _instanceHandler = instHandler;
-        _runningTask = Task.Run(() => Instance.CreateClientInstance(instHandler, ref _closeRef));
+        _runningTask = Task.Run(() => Instance.CreateClientInstance(instHandler, ref _closeRef, StatusResponse));
     }
 
     public void Close()
@@ -48,14 +50,22 @@ public class InstanceManager
         _closeRef = true;
         _runningTask.Wait();
     }
-
+    
     public string GetUid()
     {
-        return Encoding.UTF8.GetString(SHA256.HashData(
+        StringBuilder sb = new StringBuilder();
+        foreach (byte b in GetUidBytes())
+            sb.Append(b.ToString("X2"));
+        return sb.ToString();
+    }
+
+    public byte[] GetUidBytes()
+    {
+        return SHA256.HashData(
             Encoding.UTF8.GetBytes($"{InstanceData.Host}:{InstanceData.Port}" + $"{InstanceData.Method}" +
         $"{InstanceData.RemotePath}{InstanceData.MountPath}{InstanceData.DriveName}" +
         $"{InstanceData.IsKeyAuth}{InstanceData.Password}{InstanceData.Username}" +
-        $"{InstanceData.ProtocolVersion}{RandomString(15)}")));
+        $"{InstanceData.ProtocolVersion}{RandomString(15)}"));
     }
     
     public static string RandomString(int length)
@@ -119,10 +129,13 @@ public class Worker : BackgroundService
         if (AssertHas(
                 new string[]
                 {
-                    "method", "host", "username", "password",
-                    "port", "isKeyAuth", "driveName", "remotePath", "mountPath"
+                    "method", "remoteHost", "username", "password",
+                    "port", "isKeyAuth", "driveName", "remotePath", "mountPath"     // Change host to remoteHost because of HTTP conflict
                 }, configLoaded))
             return (ErrorCodes.InvalidConfig, null);
+        
+        configLoaded.Add("host", configLoaded["remoteHost"]);
+        configLoaded.Remove("remoteHost");
 
         var instanceData = InstanceData.ConvertToInstanceData(configLoaded);
         if (instanceData == null) return (ErrorCodes.CorruptedConfig, null);
@@ -212,7 +225,53 @@ public class Worker : BackgroundService
                 await WriteStringResponse(resp, client.Item2);
                 return;
             }
-            
+
+            if (req.Url!.AbsolutePath.StartsWith("/instances/") && req.Url.AbsolutePath.EndsWith("/stop"))
+            {
+                if (req.HttpMethod != "GET")
+                {
+                    RespondWrongMethod(resp);
+                    return;
+                }
+
+                var instanceName = req.Url!.AbsolutePath.Substring(0, 11);
+                if (!Instances.ContainsKey(instanceName))
+                {
+                    resp.StatusCode = 400;
+                    await WriteStringResponse(resp, "Unknown");
+                    return;
+                }
+
+                var instance = Instances[instanceName];
+                instance.Close();
+                Instances.Remove(instanceName);
+                
+                resp.StatusCode = 200;
+                await WriteStringResponse(resp, instanceName);
+                return;
+            }
+
+            if (req.Url!.AbsolutePath == "wipe")
+            {
+                if (req.HttpMethod != "POST")
+                {
+                    RespondWrongMethod(resp);
+                    return;
+                }
+
+                var amount = Instances.Keys.Count;
+
+                foreach (var instance in Instances)
+                {
+                    instance.Value.Close();
+                    Instances.Remove(instance.Key);
+                }
+                
+                resp.StatusCode = 200;
+                await WriteStringResponse(resp, amount.ToString());
+                return;
+            }
+
             if (req.Url?.AbsolutePath == "/shutdown")
             {
                 if (req.HttpMethod != "POST")
