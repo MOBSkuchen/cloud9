@@ -238,13 +238,13 @@ public class Worker : BackgroundService
 
             if (req.Url!.AbsolutePath.StartsWith("/instance/") && req.Url.AbsolutePath.EndsWith("/stop"))
             {
-                if (req.HttpMethod != "GET")
+                if (req.HttpMethod != "POST")
                 {
                     RespondWrongMethod(resp);
                     return;
                 }
 
-                var instanceName = req.Url!.AbsolutePath.Substring(0, 11);
+                var instanceName = req.Url!.AbsolutePath.Substring(10, req.Url!.AbsolutePath.Length - 15);
                 if (!Instances.ContainsKey(instanceName))
                 {
                     resp.StatusCode = 400;
