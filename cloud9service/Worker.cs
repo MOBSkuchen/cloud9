@@ -169,6 +169,9 @@ public class Worker : BackgroundService
         var uid = manager.GetUid();
         Instances.Add(uid, manager);
         
+        Thread.Sleep(1000);
+        if (!manager.StatusResponse.IsOk) return (ErrorCodes.Unable2Start, string.Join("\n", manager.StatusResponse.Log));
+        
         return (ErrorCodes.Alright, uid);
     }
 
@@ -214,19 +217,26 @@ public class Worker : BackgroundService
                     return;
                 }
                 var client = SpawnClient(req.Headers.ToDictionary()!);
+                if (client.Item1 == ErrorCodes.Unable2Start)
+                {
+                    resp.StatusCode = 500;
+                    await WriteStringResponse(resp, client.Item2!);
+                    return;
+                }
                 if (client.Item1 != ErrorCodes.Alright)
                 {
                     resp.StatusCode = 400;
                     await WriteStringResponse(resp, client.Item1.ToString());
                     return;
                 }
+                
                 resp.StatusCode = 200;
                 if (client.Item2 == null) client.Item2 = "";
                 await WriteStringResponse(resp, client.Item2);
                 return;
             }
 
-            if (req.Url!.AbsolutePath.StartsWith("/instances/") && req.Url.AbsolutePath.EndsWith("/stop"))
+            if (req.Url!.AbsolutePath.StartsWith("/instance/") && req.Url.AbsolutePath.EndsWith("/stop"))
             {
                 if (req.HttpMethod != "GET")
                 {
@@ -251,7 +261,7 @@ public class Worker : BackgroundService
                 return;
             }
 
-            if (req.Url!.AbsolutePath == "wipe")
+            if (req.Url!.AbsolutePath == "/wipe")
             {
                 if (req.HttpMethod != "POST")
                 {
@@ -297,14 +307,14 @@ public class Worker : BackgroundService
                 return;
             }
 
-            if (req.Url!.AbsolutePath.StartsWith("/instances/"))
+            if (req.Url!.AbsolutePath.StartsWith("/instance/"))
             {
                 if (req.HttpMethod != "GET")
                 {
                     RespondWrongMethod(resp);
                     return;
                 }
-                var instanceName = req.Url!.AbsolutePath.Substring(0, 11);
+                var instanceName = req.Url!.AbsolutePath.Substring(10, req.Url!.AbsolutePath.Length - 10);
                 if (!Instances.ContainsKey(instanceName))
                 {
                     resp.StatusCode = 400;
