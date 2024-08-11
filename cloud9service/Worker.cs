@@ -178,10 +178,7 @@ public class Worker : BackgroundService
             HttpListenerRequest req = ctx.Request;
             HttpListenerResponse resp = ctx.Response;
             
-            if (req.HttpMethod == "OPTIONS")
-            {
-                resp.AddHeader("Access-Control-Allow-Headers", "*");
-            }
+            if (req.HttpMethod == "OPTIONS") resp.AddHeader("Access-Control-Allow-Headers", "*");
             resp.AppendHeader("Access-Control-Allow-Origin", "*");
 
             // Print out some info about the request
@@ -211,7 +208,7 @@ public class Worker : BackgroundService
                     return;
                 }
                 resp.StatusCode = 200;
-                if (client.Item2 == null) client.Item2 = "null";
+                if (client.Item2 == null) client.Item2 = "";
                 await WriteStringResponse(resp, client.Item2);
                 return;
             }
@@ -237,9 +234,7 @@ public class Worker : BackgroundService
                     return;
                 }
                 resp.StatusCode = 200;
-                var x = string.Join("\n", Instances.Keys);
-                if (x == "") x = "none";
-                await WriteStringResponse(resp, x);
+                await WriteStringResponse(resp, string.Join("\n", Instances.Keys));
                 return;
             }
 
