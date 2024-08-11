@@ -116,7 +116,7 @@ public class Worker : BackgroundService
     
     public (ErrorCodes, string?) SpawnClient(Dictionary<string, string> configLoaded)
     {
-        if (!AssertHas(
+        if (AssertHas(
                 new string[]
                 {
                     "method", "host", "username", "password",
