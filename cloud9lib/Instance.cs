@@ -5,7 +5,7 @@ namespace cloud9lib;
 
 public class Instance
 {
-    public static void CreateClientInstance(IInstanceHandlerBlueprint instanceHandler)
+    public static void CreateClientInstance(IInstanceHandlerBlueprint instanceHandler, ref bool closeRef)
     {
         try
         {
@@ -13,12 +13,6 @@ public class Instance
             using (var dokanLogger = new ConsoleLogger("[System] "))
             using (var dokan = new Dokan(dokanLogger))
             {
-                Console.CancelKeyPress += (object? sender, ConsoleCancelEventArgs e) =>
-                {
-                    e.Cancel = true;
-                    mre.Set();
-                };
-                
                 var dokanBuilder = new DokanInstanceBuilder(dokan)
                     .ConfigureOptions(options =>
                     {
@@ -27,7 +21,9 @@ public class Instance
                     });
                 using (var dokanInstance = dokanBuilder.Build(instanceHandler))
                 {
-                    mre.WaitOne();
+                    var handle = mre.GetSafeWaitHandle();
+                    while (!closeRef) { }
+                    handle.Close();
                 }
                 Console.WriteLine(@"Success");
             }
@@ -36,5 +32,5 @@ public class Instance
         {
             Console.WriteLine(@"Error: " + ex.Message);
         }
-    }    
+    }
 }

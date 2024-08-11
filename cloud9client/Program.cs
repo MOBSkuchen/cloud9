@@ -77,7 +77,10 @@ class Program
         var fileManagement = new CloneFileManagement();
         var instHandler = new InstanceHandler(instanceData.Value, client, fileManagement);
         fileManagement.DepositInstanceHandler(instHandler);
-        Instance.CreateClientInstance(instHandler);
+        bool closeRef = false;
+        Task.Run(() => Instance.CreateClientInstance(instHandler, ref closeRef));
+        Console.ReadKey();
+        closeRef = true;
     }
     
     public static void Error(int err) {Error(err, "No message provided.");}
