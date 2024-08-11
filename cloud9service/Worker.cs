@@ -177,6 +177,12 @@ public class Worker : BackgroundService
             // Peel out the requests and response objects
             HttpListenerRequest req = ctx.Request;
             HttpListenerResponse resp = ctx.Response;
+            
+            if (req.HttpMethod == "OPTIONS")
+            {
+                resp.AddHeader("Access-Control-Allow-Headers", "*");
+            }
+            resp.AppendHeader("Access-Control-Allow-Origin", "*");
 
             // Print out some info about the request
             _logger.LogInformation("{userHostName} -> {method} > {url}", req.UserHostName, req.HttpMethod, req.Url);
