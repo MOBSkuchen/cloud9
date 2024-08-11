@@ -294,7 +294,7 @@ public class Worker : BackgroundService
             }
             catch (Exception e)
             {
-                _logger.LogError("Got error {err} from cloud9service.Worker.HandleIncomingConnections()", e);
+                _logger.LogError("Got error {err} \n[from cloud9service.Worker.HandleIncomingConnections()]", e);
             }
         }
         _logger.LogInformation("Closing");
