@@ -38,7 +38,7 @@ public struct InstanceData
     public static InstanceData? ConvertToInstanceData(Dictionary<string, string> instanceDataDictionary) {
         return new InstanceData(instanceDataDictionary["host"], instanceDataDictionary["username"],
             Convert.ToInt32(instanceDataDictionary["port"]), instanceDataDictionary["password"],
-            instanceDataDictionary["isKeyAuth"] == "true", instanceDataDictionary["remotePath"],
+            instanceDataDictionary["isKeyAuth"].ToLower() == "true", instanceDataDictionary["remotePath"],
             instanceDataDictionary["driveName"],
             instanceDataDictionary["mountPath"], 1.0, 
             instanceDataDictionary["method"]);

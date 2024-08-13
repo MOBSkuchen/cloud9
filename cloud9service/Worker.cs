@@ -69,14 +69,7 @@ public class InstanceManager
             Encoding.UTF8.GetBytes($"{InstanceData.Host}:{InstanceData.Port}" + $"{InstanceData.Method}" +
         $"{InstanceData.RemotePath}{InstanceData.MountPath}{InstanceData.DriveName}" +
         $"{InstanceData.IsKeyAuth}{InstanceData.Password}{InstanceData.Username}" +
-        $"{InstanceData.ProtocolVersion}{RandomString(15)}"));
-    }
-    
-    public static string RandomString(int length)
-    {
-        const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        return new string(Enumerable.Repeat(chars, length)
-            .Select(s => s[Random.Next(s.Length)]).ToArray());
+        $"{InstanceData.ProtocolVersion}"));
     }
 
     public void Save(bool autostart)
@@ -139,14 +132,21 @@ public class Worker : BackgroundService
         if (AssertHas(
                 new string[]
                 {
-                    "method", "remoteHost", "username", "password",
+                    "method", "username", "password",
                     "port", "isKeyAuth", "driveName", "remotePath", "mountPath"     // Change host to remoteHost because of HTTP conflict
                 }, configLoaded))
             return (ErrorCodes.InvalidConfig, null);
-        
-        configLoaded.Add("host", configLoaded["remoteHost"]);
-        configLoaded.Remove("remoteHost");
 
+        if (configLoaded.ContainsKey("remoteHost"))
+        {
+            configLoaded.Add("host", configLoaded["remoteHost"]);
+            configLoaded.Remove("remoteHost");
+        } else if (!configLoaded.ContainsKey("host"))
+        {
+            return (ErrorCodes.InvalidConfig, null);
+        }
+
+        
         var instanceData = InstanceData.ConvertToInstanceData(configLoaded);
         if (instanceData == null) return (ErrorCodes.CorruptedConfig, null);
         
@@ -228,7 +228,7 @@ public class Worker : BackgroundService
             if (!instance.Value.StatusResponse.IsOk)
             {
                 Instances.Remove(instance.Key);
-            } else reportedInstances.Add(instance.Value.Uid);
+            } else if (!reportedInstances.Contains(instance.Value.Uid)) reportedInstances.Add(instance.Value.Uid);
         }
         
         return reportedInstances;
@@ -256,14 +256,10 @@ public class Worker : BackgroundService
 
     public async Task HandleIncomingConnections()
     {
-
-        // While a user hasn't visited the `shutdown` url, keep on handling requests
         while (!Shutdown)
         {
-            // Will wait here until we hear from a connection
             HttpListenerContext ctx = await Listener.GetContextAsync();
 
-            // Peel out the requests and response objects
             HttpListenerRequest req = ctx.Request;
             HttpListenerResponse resp = ctx.Response;
             
@@ -334,6 +330,84 @@ public class Worker : BackgroundService
                 
                 resp.StatusCode = 200;
                 await WriteStringResponse(resp, instanceName);
+                return;
+            }
+            
+            if (req.Url!.AbsolutePath.StartsWith("/instance/") && req.Url.AbsolutePath.EndsWith("/start"))
+            {
+                if (req.HttpMethod != "POST")
+                {
+                    RespondWrongMethod(resp);
+                    return;
+                }
+
+                var instanceName = req.Url!.AbsolutePath.Substring(10, req.Url!.AbsolutePath.Length - 16);
+                var savedInstances = Directory.EnumerateFiles(".").Where(f => f.StartsWith(".\\S-") && f.EndsWith(".json"));
+                var savedAutostartInstances = Directory.EnumerateFiles(".").Where(f => f.StartsWith(".\\A-") && f.EndsWith(".json"));
+
+                if (Instances.ContainsKey(instanceName))
+                {
+                    resp.StatusCode = 401;
+                    await WriteStringResponse(resp, "Already running");
+                    return;
+                }
+
+                foreach (var savedInstance in savedInstances)
+                {
+                    if (MatchesUid(instanceName, savedInstance))
+                    {
+                        var client = SpawnClient(LoadSavedInstance(savedInstance)!);
+                
+                        if (client.Item1 == ErrorCodes.Unable2Start)
+                        {
+                            resp.StatusCode = 500;
+                            await WriteStringResponse(resp, client.Item2!);
+                            return;
+                        }
+                
+                        if (client.Item1 != ErrorCodes.Alright)
+                        {
+                            resp.StatusCode = 400;
+                            await WriteStringResponse(resp, client.Item1.ToString());
+                            return;
+                        }
+                
+                        resp.StatusCode = 200;
+                        if (client.Item2 == null) client.Item2 = "";
+                        await WriteStringResponse(resp, client.Item2);
+                        return;
+                    }
+                }
+
+                foreach (var savedAutostartInstance in savedAutostartInstances)
+                {
+                    if (MatchesUid(instanceName, savedAutostartInstance))
+                    {
+                        var client = SpawnClient(LoadSavedInstance(savedAutostartInstance)!);
+                
+                        if (client.Item1 == ErrorCodes.Unable2Start)
+                        {
+                            resp.StatusCode = 500;
+                            await WriteStringResponse(resp, client.Item2!);
+                            return;
+                        }
+                
+                        if (client.Item1 != ErrorCodes.Alright)
+                        {
+                            resp.StatusCode = 400;
+                            await WriteStringResponse(resp, client.Item1.ToString());
+                            return;
+                        }
+                
+                        resp.StatusCode = 200;
+                        if (client.Item2 == null) client.Item2 = "";
+                        await WriteStringResponse(resp, client.Item2);
+                        return;
+                    }
+                }
+
+                resp.StatusCode = 400;
+                await WriteStringResponse(resp, "Unknown");
                 return;
             }
             
