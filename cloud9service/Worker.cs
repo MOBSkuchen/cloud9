@@ -186,7 +186,7 @@ public class Worker : BackgroundService
         var manager = new InstanceManager(instanceData.Value, instHandler, uid);
         Instances.Add(manager.Uid, manager);
         
-        Thread.Sleep(1000);
+        Thread.Sleep(750);
         if (!manager.StatusResponse.IsOk)
         {
             Instances.Remove(manager.Uid);
@@ -289,6 +289,19 @@ public class Worker : BackgroundService
                 _logger.LogWarning("Forbidden Request from {addr} (outside)", req.UserHostAddress);
                 resp.StatusCode = 403;
                 await WriteStringResponse(resp, "Forbidden, only local requests are allowed!");
+                return;
+            }
+
+            if (req.Url?.AbsolutePath == "/")
+            {
+                if (req.HttpMethod != "GET" || !req.HasEntityBody)
+                {
+                    RespondWrongMethod(resp);
+                    return;
+                }
+
+                resp.StatusCode = 200;
+                await WriteRawResponse(resp, await File.ReadAllBytesAsync("app.html"));
                 return;
             }
 
@@ -516,9 +529,7 @@ public class Worker : BackgroundService
                 foreach (var instance in Instances)
                 {
                     if (!instance.Value.StatusResponse.IsOk)
-                    {
                         Instances.Remove(instance.Key);
-                    }
                 }
 
                 foreach (var savedInstance in savedInstances)
@@ -578,6 +589,7 @@ public class Worker : BackgroundService
         _logger.LogInformation("Listening for connections on {0}", Url);
         
         StartSavedAutostartInstances();
+        
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -585,9 +597,7 @@ public class Worker : BackgroundService
             if (_logger.IsEnabled(LogLevel.Information))
             {
                 _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
-            }
-
-            try
+            } try
             {
                 await HandleIncomingConnections();
             }
@@ -596,6 +606,7 @@ public class Worker : BackgroundService
                 _logger.LogError("Got error {err} \n[from cloud9service.Worker.HandleIncomingConnections()]", e);
             }
         }
+        
         _logger.LogInformation("Closing");
         Listener.Close();
         _hostApplicationLifetime.StopApplication();
