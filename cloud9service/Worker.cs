@@ -208,19 +208,19 @@ public class Worker : BackgroundService
 
     private List<string> GetAllInstances()
     {
-        var savedInstances = Directory.EnumerateFiles("/").Where(f => f.StartsWith("S-") && f.EndsWith(".json"));
-        var savedAutostartInstances = Directory.EnumerateFiles("/").Where(f => f.StartsWith("S-") && f.EndsWith(".json"));
+        var savedInstances = Directory.EnumerateFiles(".").Where(f => f.StartsWith(".\\S-") && f.EndsWith(".json"));
+        var savedAutostartInstances = Directory.EnumerateFiles(".").Where(f => f.StartsWith(".\\A-") && f.EndsWith(".json"));
 
         List<string> reportedInstances = new List<string>();
 
         foreach (var savedInstance in savedInstances)
         {
-            reportedInstances.Add(savedInstance);
+            reportedInstances.Add(SavedName2Uid(savedInstance));
         }
                 
         foreach (var savedAutostartInstance in savedAutostartInstances)
         {
-            reportedInstances.Add(savedAutostartInstance);
+            reportedInstances.Add(SavedName2Uid(savedAutostartInstance));
         }
 
         foreach (var instance in Instances)
@@ -230,22 +230,25 @@ public class Worker : BackgroundService
                 Instances.Remove(instance.Key);
             } else reportedInstances.Add(instance.Value.Uid);
         }
-
+        
         return reportedInstances;
     }
 
     private Dictionary<string, string>? LoadSavedInstance(string filename)
     {
-        return JsonSerializer.Deserialize<Dictionary<string, string>>(filename, JsonSerializerOptions.Default);
+        return JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(filename), JsonSerializerOptions.Default);
     }
 
-    private bool MatchesUid(string uid, string filename) => filename.Substring(2, filename.Length - 2) == uid;
+    private string SavedName2Uid(string filename) => filename.Substring(4, filename.Length - 4).Substring(0, filename.Length - 9);
+    private bool MatchesUid(string uid, string filename) => SavedName2Uid(filename) == uid;
 
-    public async Task SendSavedInstance(HttpListenerResponse resp, string savedInstance)
+    public async Task SendSavedInstance(HttpListenerResponse resp, string savedInstance, bool running, bool autostart)
     {
         var instCfg = LoadSavedInstance(savedInstance)!;
-        instCfg["running"] = "false";
+        instCfg["running"] = running.ToString();
+        instCfg["autostart"] = autostart.ToString();
         instCfg["startedAt"] = "null";
+        instCfg["saved"] = "true";
                     
         resp.StatusCode = 200;
         await WriteJsonResponse(resp, instCfg);
@@ -416,24 +419,10 @@ public class Worker : BackgroundService
                 }
                 
                 var instanceName = req.Url!.AbsolutePath.Substring(10, req.Url!.AbsolutePath.Length - 10);
-                var savedInstances = Directory.EnumerateFiles("/").Where(f => f.StartsWith("S-") && f.EndsWith(".json"));
-                var savedAutostartInstances = Directory.EnumerateFiles("/").Where(f => f.StartsWith("S-") && f.EndsWith(".json"));
+                var savedInstances = Directory.EnumerateFiles(".").Where(f => f.StartsWith(".\\S-") && f.EndsWith(".json"));
+                var savedAutostartInstances = Directory.EnumerateFiles(".").Where(f => f.StartsWith(".\\A-") && f.EndsWith(".json"));
 
-                foreach (var savedInstance in savedInstances)
-                {
-                    if (MatchesUid(instanceName, savedInstance))
-                    {
-                        await SendSavedInstance(resp, savedInstance);
-                    }
-                }
-                
-                foreach (var savedAutostartInstance in savedAutostartInstances)
-                {
-                    if (MatchesUid(instanceName, savedAutostartInstance))
-                    {
-                        await SendSavedInstance(resp, savedAutostartInstance);
-                    }
-                }
+                var running = Instances.ContainsKey(instanceName);
 
                 foreach (var instance in Instances)
                 {
@@ -443,10 +432,30 @@ public class Worker : BackgroundService
                     }
                 }
 
+                foreach (var savedInstance in savedInstances)
+                {
+                    if (MatchesUid(instanceName, savedInstance))
+                    {
+                        await SendSavedInstance(resp, savedInstance, running, true);
+                        return;
+                    }
+                }
+
+                foreach (var savedAutostartInstance in savedAutostartInstances)
+                {
+                    if (MatchesUid(instanceName, savedAutostartInstance))
+                    {
+                        await SendSavedInstance(resp, savedAutostartInstance, running, true);
+                        return;
+                    }
+                }
+
                 if (Instances.ContainsKey(instanceName))
                 {
                     var instCfg = Instances[instanceName].InstanceData.ConvertToDictionary();
                     instCfg["running"] = "true";
+                    instCfg["autostart"] = "false";
+                    instCfg["saved"] = "false";
                     instCfg["startedAt"] = Instances[instanceName].StartedAt;
                     
                     resp.StatusCode = 200;
