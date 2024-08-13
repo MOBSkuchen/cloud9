@@ -126,6 +126,13 @@ public class Worker : BackgroundService
         }
         return false;
     }
+
+    public IEnumerable<string> GetAllSavedInstances()
+    {
+        var savedInstances = Directory.EnumerateFiles(".").Where(f => f.StartsWith(".\\S-") && f.EndsWith(".json"));
+        var savedAutostartInstances = Directory.EnumerateFiles(".").Where(f => f.StartsWith(".\\A-") && f.EndsWith(".json"));
+        return savedInstances.Concat(savedAutostartInstances);
+    }
     
     public (ErrorCodes, string?) SpawnClient(Dictionary<string, string> configLoaded, string? uid = null)
     {
@@ -208,27 +215,14 @@ public class Worker : BackgroundService
 
     private List<string> GetAllInstances()
     {
-        var savedInstances = Directory.EnumerateFiles(".").Where(f => f.StartsWith(".\\S-") && f.EndsWith(".json"));
-        var savedAutostartInstances = Directory.EnumerateFiles(".").Where(f => f.StartsWith(".\\A-") && f.EndsWith(".json"));
-
         List<string> reportedInstances = new List<string>();
-
-        foreach (var savedInstance in savedInstances)
-        {
-            reportedInstances.Add(SavedName2Uid(savedInstance));
-        }
-                
-        foreach (var savedAutostartInstance in savedAutostartInstances)
-        {
-            reportedInstances.Add(SavedName2Uid(savedAutostartInstance));
-        }
+        reportedInstances.AddRange(GetAllSavedInstances());
+        reportedInstances = reportedInstances.Select(SavedName2Uid).ToList();
 
         foreach (var instance in Instances)
         {
-            if (!instance.Value.StatusResponse.IsOk)
-            {
-                Instances.Remove(instance.Key);
-            } else if (!reportedInstances.Contains(instance.Value.Uid)) reportedInstances.Add(instance.Value.Uid);
+            if (!instance.Value.StatusResponse.IsOk) Instances.Remove(instance.Key);
+            else if (!reportedInstances.Contains(instance.Value.Uid)) reportedInstances.Add(instance.Value.Uid);
         }
         
         return reportedInstances;
@@ -342,8 +336,6 @@ public class Worker : BackgroundService
                 }
 
                 var instanceName = req.Url!.AbsolutePath.Substring(10, req.Url!.AbsolutePath.Length - 16);
-                var savedInstances = Directory.EnumerateFiles(".").Where(f => f.StartsWith(".\\S-") && f.EndsWith(".json"));
-                var savedAutostartInstances = Directory.EnumerateFiles(".").Where(f => f.StartsWith(".\\A-") && f.EndsWith(".json"));
 
                 if (Instances.ContainsKey(instanceName))
                 {
@@ -352,38 +344,11 @@ public class Worker : BackgroundService
                     return;
                 }
 
-                foreach (var savedInstance in savedInstances)
+                foreach (var savedInstance in GetAllSavedInstances())
                 {
                     if (MatchesUid(instanceName, savedInstance))
                     {
                         var client = SpawnClient(LoadSavedInstance(savedInstance)!);
-                
-                        if (client.Item1 == ErrorCodes.Unable2Start)
-                        {
-                            resp.StatusCode = 500;
-                            await WriteStringResponse(resp, client.Item2!);
-                            return;
-                        }
-                
-                        if (client.Item1 != ErrorCodes.Alright)
-                        {
-                            resp.StatusCode = 400;
-                            await WriteStringResponse(resp, client.Item1.ToString());
-                            return;
-                        }
-                
-                        resp.StatusCode = 200;
-                        if (client.Item2 == null) client.Item2 = "";
-                        await WriteStringResponse(resp, client.Item2);
-                        return;
-                    }
-                }
-
-                foreach (var savedAutostartInstance in savedAutostartInstances)
-                {
-                    if (MatchesUid(instanceName, savedAutostartInstance))
-                    {
-                        var client = SpawnClient(LoadSavedInstance(savedAutostartInstance)!);
                 
                         if (client.Item1 == ErrorCodes.Unable2Start)
                         {
@@ -431,6 +396,31 @@ public class Worker : BackgroundService
 
                 var instance = Instances[instanceName];
                 instance.Save(headers.ContainsKey("autostart") && headers["autostart"] == "true");
+                
+                resp.StatusCode = 200;
+                await WriteStringResponse(resp, instanceName);
+                return;
+            }
+            
+            if (req.Url!.AbsolutePath.StartsWith("/instance/") && req.Url.AbsolutePath.EndsWith("/delete"))
+            {
+                if (req.HttpMethod != "POST")
+                {
+                    RespondWrongMethod(resp);
+                    return;
+                }
+
+                var instanceName = req.Url!.AbsolutePath.Substring(10, req.Url!.AbsolutePath.Length - 17);
+                var allSavedInstances = GetAllSavedInstances();
+                var instanceFilenames = allSavedInstances.Where(f => MatchesUid(instanceName, f)).ToList();
+                if (instanceFilenames.Count == 0)
+                {
+                    resp.StatusCode = 400;
+                    await WriteStringResponse(resp, "Unknown");
+                    return;
+                }
+                
+                File.Delete(instanceFilenames[0]);
                 
                 resp.StatusCode = 200;
                 await WriteStringResponse(resp, instanceName);
