@@ -139,7 +139,7 @@ public class Worker : BackgroundService
         if (AssertHas(
                 new string[]
                 {
-                    "method", "username", "password",
+                    "instMethod", "username", "password",
                     "port", "isKeyAuth", "driveName", "remotePath", "mountPath"     // Change host to remoteHost because of HTTP conflict
                 }, configLoaded))
             return (ErrorCodes.InvalidConfig, null);
@@ -152,7 +152,9 @@ public class Worker : BackgroundService
         {
             return (ErrorCodes.InvalidConfig, null);
         }
-
+        
+        configLoaded.Add("method", configLoaded["instMethod"]);
+        configLoaded.Remove("instMethod");
         
         var instanceData = InstanceData.ConvertToInstanceData(configLoaded);
         if (instanceData == null) return (ErrorCodes.CorruptedConfig, null);
@@ -186,7 +188,11 @@ public class Worker : BackgroundService
         Instances.Add(manager.Uid, manager);
         
         Thread.Sleep(1000);
-        if (!manager.StatusResponse.IsOk) return (ErrorCodes.Unable2Start, manager.StatusResponse.ErrMsg);
+        if (!manager.StatusResponse.IsOk)
+        {
+            Instances.Remove(manager.Uid);
+            return (ErrorCodes.Unable2Start, manager.StatusResponse.ErrMsg);
+        }
         
         return (ErrorCodes.Alright, manager.Uid);
     }
@@ -247,6 +253,21 @@ public class Worker : BackgroundService
         resp.StatusCode = 200;
         await WriteJsonResponse(resp, instCfg);
     }
+    
+    private static string GetRequestPostData(HttpListenerRequest request)
+    {
+        if (!request.HasEntityBody)
+        {
+            return null;
+        }
+        using (Stream body = request.InputStream) // here we have data
+        {
+            using (var reader = new StreamReader(body, request.ContentEncoding))
+            {
+                return reader.ReadToEnd();
+            }
+        }
+    }
 
     public async Task HandleIncomingConnections()
     {
@@ -274,13 +295,17 @@ public class Worker : BackgroundService
 
             if (req.Url?.AbsolutePath == "/create-instance")
             {
-                if (req.HttpMethod != "POST")
+                if (req.HttpMethod != "POST" || !req.HasEntityBody)
                 {
                     RespondWrongMethod(resp);
                     return;
                 }
-                
-                var client = SpawnClient(req.Headers.ToDictionary()!);
+
+                var data = GetRequestPostData(req);
+                Console.WriteLine(data);
+                var client = SpawnClient(
+                    JsonSerializer.Deserialize<Dictionary<string, string>>(data) ??
+                    new Dictionary<string, string> {});
                 
                 if (client.Item1 == ErrorCodes.Unable2Start)
                 {
