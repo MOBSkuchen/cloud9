@@ -29,17 +29,21 @@ public static class _
 
 public class InstanceManager
 {
-    private bool _closeRef = false;
+    private bool _closeRef;
     private readonly Task _runningTask;
     private InstanceHandler _instanceHandler;
     public InstanceData InstanceData;
     public static Random Random = new Random();
     public String StartedAt = DateTime.Now.GetTimestamp();
 
+    public string Uid;
+
     public StatusResponse StatusResponse = new StatusResponse();
 
-    public InstanceManager(InstanceData instanceData, InstanceHandler instHandler)
+    public InstanceManager(InstanceData instanceData, InstanceHandler instHandler, string? uid = null)
     {
+        if (uid != null) Uid = uid;
+        else Uid = GetUid();
         InstanceData = instanceData;
         _instanceHandler = instHandler;
         _runningTask = Task.Run(() => Instance.CreateClientInstance(instHandler, ref _closeRef, StatusResponse));
@@ -51,7 +55,7 @@ public class InstanceManager
         _runningTask.Wait();
     }
     
-    public string GetUid()
+    private string GetUid()
     {
         StringBuilder sb = new StringBuilder();
         foreach (byte b in GetUidBytes())
@@ -59,7 +63,7 @@ public class InstanceManager
         return sb.ToString();
     }
 
-    public byte[] GetUidBytes()
+    private byte[] GetUidBytes()
     {
         return SHA256.HashData(
             Encoding.UTF8.GetBytes($"{InstanceData.Host}:{InstanceData.Port}" + $"{InstanceData.Method}" +
@@ -74,13 +78,19 @@ public class InstanceManager
         return new string(Enumerable.Repeat(chars, length)
             .Select(s => s[Random.Next(s.Length)]).ToArray());
     }
+
+    public void Save(bool autostart)
+    {
+        var filename = autostart ? $"A-{Uid}.json" : $"S-{Uid}.json";
+        File.WriteAllBytes(filename, JsonSerializer.SerializeToUtf8Bytes(InstanceData.ConvertToDictionary(), JsonSerializerOptions.Default));
+    }
 }
 
 public class Worker : BackgroundService
 {
     private readonly ILogger<Worker> _logger;
     private readonly IHostApplicationLifetime _hostApplicationLifetime;
-    public bool Shutdown = false;
+    public bool Shutdown;
 
     public Worker(IHostApplicationLifetime hostApplicationLifetime, ILogger<Worker> logger)
     {
@@ -124,7 +134,7 @@ public class Worker : BackgroundService
         return false;
     }
     
-    public (ErrorCodes, string?) SpawnClient(Dictionary<string, string> configLoaded)
+    public (ErrorCodes, string?) SpawnClient(Dictionary<string, string> configLoaded, string? uid = null)
     {
         if (AssertHas(
                 new string[]
@@ -165,20 +175,80 @@ public class Worker : BackgroundService
         
         fileManagement.DepositInstanceHandler(instHandler);
 
-        var manager = new InstanceManager(instanceData.Value, instHandler);
-        var uid = manager.GetUid();
-        Instances.Add(uid, manager);
+        var manager = new InstanceManager(instanceData.Value, instHandler, uid);
+        Instances.Add(manager.Uid, manager);
         
         Thread.Sleep(1000);
         if (!manager.StatusResponse.IsOk) return (ErrorCodes.Unable2Start, manager.StatusResponse.ErrMsg);
         
-        return (ErrorCodes.Alright, uid);
+        return (ErrorCodes.Alright, manager.Uid);
     }
 
     private async void RespondWrongMethod(HttpListenerResponse resp)
     {
         resp.StatusCode = 405;
         await WriteStringResponse(resp, "Invalid Method");
+    }
+
+    private (ErrorCodes, string?) SpawnClientByFilename(string instance) =>
+        SpawnClient(JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(instance))!,
+            instance.Substring(2, instance.Length - 2));
+
+    private void StartSavedAutostartInstances()
+    {
+        var files = Directory.EnumerateFiles("/").Where(f => f.StartsWith("A-") && f.EndsWith(".json"));
+
+        foreach (var instance in files)
+        {
+            var client = SpawnClientByFilename(instance);
+            if (client.Item1 != ErrorCodes.Alright) 
+                _logger.LogError("Encountered error when starting autostart instance: {erc}", client.Item1);
+        }
+    }
+
+    private List<string> GetAllInstances()
+    {
+        var savedInstances = Directory.EnumerateFiles("/").Where(f => f.StartsWith("S-") && f.EndsWith(".json"));
+        var savedAutostartInstances = Directory.EnumerateFiles("/").Where(f => f.StartsWith("S-") && f.EndsWith(".json"));
+
+        List<string> reportedInstances = new List<string>();
+
+        foreach (var savedInstance in savedInstances)
+        {
+            reportedInstances.Add(savedInstance);
+        }
+                
+        foreach (var savedAutostartInstance in savedAutostartInstances)
+        {
+            reportedInstances.Add(savedAutostartInstance);
+        }
+
+        foreach (var instance in Instances)
+        {
+            if (!instance.Value.StatusResponse.IsOk)
+            {
+                Instances.Remove(instance.Key);
+            } else reportedInstances.Add(instance.Value.Uid);
+        }
+
+        return reportedInstances;
+    }
+
+    private Dictionary<string, string>? LoadSavedInstance(string filename)
+    {
+        return JsonSerializer.Deserialize<Dictionary<string, string>>(filename, JsonSerializerOptions.Default);
+    }
+
+    private bool MatchesUid(string uid, string filename) => filename.Substring(2, filename.Length - 2) == uid;
+
+    public async Task SendSavedInstance(HttpListenerResponse resp, string savedInstance)
+    {
+        var instCfg = LoadSavedInstance(savedInstance)!;
+        instCfg["running"] = "false";
+        instCfg["startedAt"] = "null";
+                    
+        resp.StatusCode = 200;
+        await WriteJsonResponse(resp, instCfg);
     }
 
     public async Task HandleIncomingConnections()
@@ -209,20 +279,23 @@ public class Worker : BackgroundService
                 return;
             }
 
-            if (req.Url?.AbsolutePath == "/start-instance")
+            if (req.Url?.AbsolutePath == "/create-instance")
             {
                 if (req.HttpMethod != "POST")
                 {
                     RespondWrongMethod(resp);
                     return;
                 }
+                
                 var client = SpawnClient(req.Headers.ToDictionary()!);
+                
                 if (client.Item1 == ErrorCodes.Unable2Start)
                 {
                     resp.StatusCode = 500;
                     await WriteStringResponse(resp, client.Item2!);
                     return;
                 }
+                
                 if (client.Item1 != ErrorCodes.Alright)
                 {
                     resp.StatusCode = 400;
@@ -255,6 +328,32 @@ public class Worker : BackgroundService
                 var instance = Instances[instanceName];
                 instance.Close();
                 Instances.Remove(instanceName);
+                
+                resp.StatusCode = 200;
+                await WriteStringResponse(resp, instanceName);
+                return;
+            }
+            
+            if (req.Url!.AbsolutePath.StartsWith("/instance/") && req.Url.AbsolutePath.EndsWith("/save"))
+            {
+                if (req.HttpMethod != "POST")
+                {
+                    RespondWrongMethod(resp);
+                    return;
+                }
+
+                var instanceName = req.Url!.AbsolutePath.Substring(10, req.Url!.AbsolutePath.Length - 15);
+                if (!Instances.ContainsKey(instanceName))
+                {
+                    resp.StatusCode = 400;
+                    await WriteStringResponse(resp, "Unknown");
+                    return;
+                }
+
+                var headers = req.Headers.ToDictionary();
+
+                var instance = Instances[instanceName];
+                instance.Save(headers.ContainsKey("autostart") && headers["autostart"] == "true");
                 
                 resp.StatusCode = 200;
                 await WriteStringResponse(resp, instanceName);
@@ -302,16 +401,9 @@ public class Worker : BackgroundService
                     RespondWrongMethod(resp);
                     return;
                 }
-
-                foreach (var instance in Instances)
-                {
-                    if (!instance.Value.StatusResponse.IsOk)
-                    {
-                        Instances.Remove(instance.Key);
-                    }
-                }
+                
                 resp.StatusCode = 200;
-                await WriteStringResponse(resp, string.Join("\n", Instances.Keys));
+                await WriteStringResponse(resp, string.Join("\n", GetAllInstances()));
                 return;
             }
 
@@ -322,18 +414,48 @@ public class Worker : BackgroundService
                     RespondWrongMethod(resp);
                     return;
                 }
+                
                 var instanceName = req.Url!.AbsolutePath.Substring(10, req.Url!.AbsolutePath.Length - 10);
-                if (!Instances.ContainsKey(instanceName))
+                var savedInstances = Directory.EnumerateFiles("/").Where(f => f.StartsWith("S-") && f.EndsWith(".json"));
+                var savedAutostartInstances = Directory.EnumerateFiles("/").Where(f => f.StartsWith("S-") && f.EndsWith(".json"));
+
+                foreach (var savedInstance in savedInstances)
                 {
-                    resp.StatusCode = 400;
-                    await WriteStringResponse(resp, "Unknown");
-                    return;
+                    if (MatchesUid(instanceName, savedInstance))
+                    {
+                        await SendSavedInstance(resp, savedInstance);
+                    }
+                }
+                
+                foreach (var savedAutostartInstance in savedAutostartInstances)
+                {
+                    if (MatchesUid(instanceName, savedAutostartInstance))
+                    {
+                        await SendSavedInstance(resp, savedAutostartInstance);
+                    }
                 }
 
-                resp.StatusCode = 200;
-                var dict = Instances[instanceName].InstanceData.ConvertToDictionary();
-                dict["startedAt"] = Instances[instanceName].StartedAt;
-                await WriteJsonResponse(resp, dict);
+                foreach (var instance in Instances)
+                {
+                    if (!instance.Value.StatusResponse.IsOk)
+                    {
+                        Instances.Remove(instance.Key);
+                    }
+                }
+
+                if (Instances.ContainsKey(instanceName))
+                {
+                    var instCfg = Instances[instanceName].InstanceData.ConvertToDictionary();
+                    instCfg["running"] = "true";
+                    instCfg["startedAt"] = Instances[instanceName].StartedAt;
+                    
+                    resp.StatusCode = 200;
+                    await WriteJsonResponse(resp, instCfg);
+                    return;
+                }
+                
+                resp.StatusCode = 400;
+                await WriteStringResponse(resp, "Unknown");
                 return;
             }
 
@@ -352,11 +474,12 @@ public class Worker : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        
         Listener = new HttpListener();
         Listener.Prefixes.Add(Url);
         Listener.Start();
         _logger.LogInformation("Listening for connections on {0}", Url);
+        
+        StartSavedAutostartInstances();
 
         while (!stoppingToken.IsCancellationRequested)
         {
