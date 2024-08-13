@@ -139,7 +139,7 @@ public class Worker : BackgroundService
         if (AssertHas(
                 new string[]
                 {
-                    "instMethod", "username", "password",
+                    "method", "username", "password",
                     "port", "isKeyAuth", "driveName", "remotePath", "mountPath"     // Change host to remoteHost because of HTTP conflict
                 }, configLoaded))
             return (ErrorCodes.InvalidConfig, null);
@@ -152,9 +152,8 @@ public class Worker : BackgroundService
         {
             return (ErrorCodes.InvalidConfig, null);
         }
-        
-        configLoaded.Add("method", configLoaded["instMethod"]);
-        configLoaded.Remove("instMethod");
+
+        configLoaded["mountPath"] = configLoaded["mountPath"].Replace("/", "\\");
         
         var instanceData = InstanceData.ConvertToInstanceData(configLoaded);
         if (instanceData == null) return (ErrorCodes.CorruptedConfig, null);
@@ -205,14 +204,15 @@ public class Worker : BackgroundService
 
     private (ErrorCodes, string?) SpawnClientByFilename(string instance) =>
         SpawnClient(JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(instance))!,
-            instance.Substring(2, instance.Length - 2));
+            SavedName2Uid(instance));
 
     private void StartSavedAutostartInstances()
     {
-        var files = Directory.EnumerateFiles("/").Where(f => f.StartsWith("A-") && f.EndsWith(".json"));
+        var savedAutostartInstances = Directory.EnumerateFiles(".").Where(f => f.StartsWith(".\\A-") && f.EndsWith(".json"));
 
-        foreach (var instance in files)
+        foreach (var instance in savedAutostartInstances)
         {
+            _logger.LogInformation("Auto starting instance : {uid} from {path}", SavedName2Uid(instance), instance);
             var client = SpawnClientByFilename(instance);
             if (client.Item1 != ErrorCodes.Alright) 
                 _logger.LogError("Encountered error when starting autostart instance: {erc}", client.Item1);
@@ -281,7 +281,6 @@ public class Worker : BackgroundService
             if (req.HttpMethod == "OPTIONS") resp.AddHeader("Access-Control-Allow-Headers", "*");
             resp.AppendHeader("Access-Control-Allow-Origin", "*");
 
-            // Print out some info about the request
             _logger.LogInformation("{userHostName} -> {method} > {url}", req.UserHostName, req.HttpMethod, req.Url);
 
             if (!req.IsLocal)
@@ -302,7 +301,6 @@ public class Worker : BackgroundService
                 }
 
                 var data = GetRequestPostData(req);
-                Console.WriteLine(data);
                 var client = SpawnClient(
                     JsonSerializer.Deserialize<Dictionary<string, string>>(data) ??
                     new Dictionary<string, string> {});
@@ -420,7 +418,9 @@ public class Worker : BackgroundService
                 var headers = req.Headers.ToDictionary();
 
                 var instance = Instances[instanceName];
-                instance.Save(headers.ContainsKey("autostart") && headers["autostart"] == "true");
+                var hx = JsonSerializer.Deserialize<Dictionary<string, string>>(GetRequestPostData(req)) ??
+                         new Dictionary<string, string> { };
+                instance.Save(hx.ContainsKey("autostart") && hx["autostart"] == "true");
                 
                 resp.StatusCode = 200;
                 await WriteStringResponse(resp, instanceName);
@@ -525,7 +525,7 @@ public class Worker : BackgroundService
                 {
                     if (MatchesUid(instanceName, savedInstance))
                     {
-                        await SendSavedInstance(resp, savedInstance, running, true);
+                        await SendSavedInstance(resp, savedInstance, running, false);
                         return;
                     }
                 }
