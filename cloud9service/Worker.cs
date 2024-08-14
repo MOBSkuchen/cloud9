@@ -23,7 +23,7 @@ public static class _
     
     public static String GetTimestamp(this DateTime value)
     {
-        return value.ToString("dd.MM.yyyy;HH:mm:ss.ffff");
+        return value.ToString("dd.MM.yyyy HH-mm-ss.ffff");
     }
 }
 
@@ -79,16 +79,40 @@ public class InstanceManager
     }
 }
 
+public class FileLogger
+{
+    public string Path;
+    private ILogger _other;
+    public FileLogger(string path, ILogger other)
+    {
+        _other = other;
+        Path = path;
+        File.WriteAllText(path, "");
+    }
+    public void Log(LogLevel level, string message)
+    {
+        _other.Log(level, null, message);
+        File.AppendAllText(Path, $"{DateTime.Now.GetTimestamp()} > {level.ToString()} : {message}\n");
+    }
+
+    public void LogError(string message) => Log(LogLevel.Error, message);
+    public void LogWarn(string message) => Log(LogLevel.Warning, message);
+    public void LogFatal(string message) => Log(LogLevel.Critical, message);
+    public void LogInfo(string message) => Log(LogLevel.Information, message);
+    public void LogDebug(string message) => Log(LogLevel.Debug, message);
+}
+
 public class Worker : BackgroundService
 {
-    private readonly ILogger<Worker> _logger;
+    private readonly FileLogger _logger;
     private readonly IHostApplicationLifetime _hostApplicationLifetime;
     public bool Shutdown;
+    public string LogPath = $"./{DateTime.Now.GetTimestamp()}.log";
 
     public Worker(IHostApplicationLifetime hostApplicationLifetime, ILogger<Worker> logger)
     {
         _hostApplicationLifetime = hostApplicationLifetime;
-        _logger = logger;
+        _logger = new FileLogger(LogPath, logger);
     }
     
     public static HttpListener Listener;
@@ -212,10 +236,10 @@ public class Worker : BackgroundService
 
         foreach (var instance in savedAutostartInstances)
         {
-            _logger.LogInformation("Auto starting instance : {uid} from {path}", SavedName2Uid(instance), instance);
+            _logger.LogInfo($"Auto starting instance : {SavedName2Uid(instance)} from {instance}");
             var client = SpawnClientByFilename(instance);
             if (client.Item1 != ErrorCodes.Alright) 
-                _logger.LogError("Encountered error when starting autostart instance: {erc}", client.Item1);
+                _logger.LogError($"Encountered error when starting autostart instance: {client.Item1}");
         }
     }
 
@@ -281,12 +305,12 @@ public class Worker : BackgroundService
             if (req.HttpMethod == "OPTIONS") resp.AddHeader("Access-Control-Allow-Headers", "*");
             resp.AppendHeader("Access-Control-Allow-Origin", "*");
 
-            _logger.LogInformation("{userHostName} -> {method} > {url}", req.UserHostName, req.HttpMethod, req.Url);
+            _logger.LogInfo($"{req.UserHostName} -> {req.HttpMethod} > {req.Url}");
 
             if (!req.IsLocal)
             {
                 // Forbidden
-                _logger.LogWarning("Forbidden Request from {addr} (outside)", req.UserHostAddress);
+                _logger.LogWarn($"Forbidden Request from {req.UserHostAddress} (outside)");
                 resp.StatusCode = 403;
                 await WriteStringResponse(resp, "Forbidden, only local requests are allowed!");
                 return;
@@ -586,7 +610,7 @@ public class Worker : BackgroundService
         Listener = new HttpListener();
         Listener.Prefixes.Add(Url);
         Listener.Start();
-        _logger.LogInformation("Listening for connections on {0}", Url);
+        _logger.LogInfo($"Listening for connections on {Url}");
         
         StartSavedAutostartInstances();
         
@@ -594,20 +618,18 @@ public class Worker : BackgroundService
         while (!stoppingToken.IsCancellationRequested)
         {
             if (Shutdown) break;
-            if (_logger.IsEnabled(LogLevel.Information))
-            {
-                _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
-            } try
+            _logger.LogInfo($"Worker running at: {DateTimeOffset.Now}");
+            try
             {
                 await HandleIncomingConnections();
             }
             catch (Exception e)
             {
-                _logger.LogError("Got error {err} \n[from cloud9service.Worker.HandleIncomingConnections()]", e);
+                _logger.LogError($"Got error {e} \n[from cloud9service.Worker.HandleIncomingConnections()]");
             }
         }
         
-        _logger.LogInformation("Closing");
+        _logger.LogInfo("Closing");
         Listener.Close();
         _hostApplicationLifetime.StopApplication();
     }
