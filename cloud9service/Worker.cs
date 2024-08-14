@@ -318,7 +318,7 @@ public class Worker : BackgroundService
 
             if (req.Url?.AbsolutePath == "/")
             {
-                if (req.HttpMethod != "GET" || !req.HasEntityBody)
+                if (req.HttpMethod != "GET")
                 {
                     RespondWrongMethod(resp);
                     return;
