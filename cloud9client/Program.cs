@@ -77,10 +77,12 @@ class Program
         var fileManagement = new CloneFileManagement();
         var instHandler = new InstanceHandler(instanceData.Value, client, fileManagement);
         fileManagement.DepositInstanceHandler(instHandler);
-        bool closeRef = false;
-        Task.Run(() => Instance.CreateClientInstance(instHandler, ref closeRef));
+        CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+        CancellationToken token = cancellationTokenSource.Token;
+        var task = Task.Run(() => Instance.CreateClientInstance(instHandler, token));
         Console.ReadKey();
-        closeRef = true;
+        cancellationTokenSource.Cancel();
+        task.Wait(token);
     }
     
     public static void Error(int err) {Error(err, "No message provided.");}
