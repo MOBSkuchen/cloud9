@@ -8,11 +8,12 @@ public class StatusResponse
     public bool IsOk = true;
     public string? ErrMsg;
     public bool IsDone = false;
+    public bool Close = false;
 }
 
 public class Instance
 {
-    public static void CreateClientInstance(IInstanceHandlerBlueprint instanceHandler, ref bool closeRef, StatusResponse? statusResponse = null)
+    public static void CreateClientInstance(IInstanceHandlerBlueprint instanceHandler, CancellationToken cancellationToken, StatusResponse? statusResponse = null)
     {
         try
         {
@@ -31,11 +32,10 @@ public class Instance
                     using (var dokanInstance = dokanBuilder.Build(instanceHandler))
                     {
                         var handle = mre.GetSafeWaitHandle();
-                        while (!closeRef) { }
-
+                        while (!cancellationToken.IsCancellationRequested) { }
                         handle.Close();
+                        if (statusResponse != null) statusResponse.IsDone = true;
                     }
-                    if (statusResponse != null) statusResponse.IsDone = true;
                 }
             }
         }

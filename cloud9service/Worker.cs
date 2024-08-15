@@ -29,7 +29,8 @@ public static class _
 
 public class InstanceManager
 {
-    private bool _closeRef;
+    private CancellationTokenSource _cancellationTokenSrc = new CancellationTokenSource();
+    private CancellationToken _cancellationToken;
     private readonly Task _runningTask;
     private InstanceHandler _instanceHandler;
     public InstanceData InstanceData;
@@ -46,13 +47,13 @@ public class InstanceManager
         else Uid = GetUid();
         InstanceData = instanceData;
         _instanceHandler = instHandler;
-        _runningTask = Task.Run(() => Instance.CreateClientInstance(instHandler, ref _closeRef, StatusResponse));
+        _cancellationToken = _cancellationTokenSrc.Token;
+        _runningTask = Task.Run(() => Instance.CreateClientInstance(instHandler, _cancellationToken, StatusResponse));
     }
 
     public void Close()
     {
-        _closeRef = true;
-        _runningTask.Wait();
+        _cancellationTokenSrc.Cancel();
     }
     
     private string GetUid()
@@ -107,7 +108,7 @@ public class Worker : BackgroundService
     private readonly FileLogger _logger;
     private readonly IHostApplicationLifetime _hostApplicationLifetime;
     public bool Shutdown;
-    public string LogPath = $"./{DateTime.Now.GetTimestamp()}.log";
+    public string LogPath = $"./c9s-{DateTime.Now.GetTimestamp()}.log";
 
     public Worker(IHostApplicationLifetime hostApplicationLifetime, ILogger<Worker> logger)
     {
@@ -607,30 +608,43 @@ public class Worker : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        Listener = new HttpListener();
-        Listener.Prefixes.Add(Url);
-        Listener.Start();
-        _logger.LogInfo($"Listening for connections on {Url}");
-        
-        StartSavedAutostartInstances();
-        
-
-        while (!stoppingToken.IsCancellationRequested)
+        try
         {
-            if (Shutdown) break;
-            _logger.LogInfo($"Worker running at: {DateTimeOffset.Now}");
-            try
+            var location = AppDomain.CurrentDomain.BaseDirectory;
+            if (location != null) Directory.SetCurrentDirectory(location);
+            else _logger.LogError("Could not change dir to exe file location, this service might fail");
+            _logger.LogInfo($"Dir : {Directory.GetCurrentDirectory()}");
+            Listener = new HttpListener();
+            Listener.Prefixes.Add(Url);
+            Listener.Start();
+            _logger.LogInfo($"Listening for connections on {Url}");
+
+            StartSavedAutostartInstances();
+
+            while (!stoppingToken.IsCancellationRequested)
             {
-                await HandleIncomingConnections();
-            }
-            catch (Exception e)
-            {
-                _logger.LogError($"Got error {e} \n[from cloud9service.Worker.HandleIncomingConnections()]");
+                if (Shutdown) break;
+                _logger.LogInfo($"Worker running at: {DateTimeOffset.Now}");
+                try
+                {
+                    await HandleIncomingConnections();
+                }
+                catch (Exception e)
+                {
+                    _logger.LogError(
+                        $"Got error {e.Message} \n[from cloud9service.Worker.HandleIncomingConnections()]");
+                }
             }
         }
-        
-        _logger.LogInfo("Closing");
-        Listener.Close();
-        _hostApplicationLifetime.StopApplication();
+        catch (Exception e)
+        {
+            _logger.LogError($"Got error {e.Message} \n[from cloud9service.Worker.HandleIncomingConnections()]");
+        }
+        finally
+        {
+            _logger.LogInfo("Closing");
+            Listener.Close();
+            _hostApplicationLifetime.StopApplication();
+        }
     }
 }
