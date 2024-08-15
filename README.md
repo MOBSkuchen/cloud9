@@ -11,12 +11,17 @@ it supports multiple ways of streaming files
 - #### Customizable API
   - Change the way files are shown
   - Everything is modular, you can create all of the parts yourself and any arrangement will work with another
-## Intended usage
-You can of course use this program however you want.
-The recommended way however is to have a config file for an instance and a script which runs the program using the config file to start the instance. This script can then be added to the autostart and run as long as the device.
-## Installation
-1. Install Dokan
-2. Download Repo
-3. Create a config JSON file
-4. Run client using "cloud9client client mycfg.json"
-5. Enjoy!
+
+## Before installing!
+Download and install Dokan and ensure you have dokan2.sys as a driver on your device.
+
+## Installing *cloud9client*
+To install cloud9client download this repo and build it from source.
+Releases for cloud9client are *not yet* available and it must be built from source.
+
+## Installing *cloud9service* (via *cloud9installer*)
+Download cloud9installer.exe from the latest release or build it from source using `cloud9installer.nsi`, 
+then run the installer and restart your computer to be sure. A shortcut to `http://localhost:4994/` should be created, click it and enjoy!
+
+## Installing *cloud9service* (from source)
+Download this repo and build *cloud9service* from scratch. Then put it in a directory together with app.html and run it.
